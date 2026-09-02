@@ -1,6 +1,6 @@
 package br.edu.uniamerica.parceiro_auto.entity.enums;
 
-public enum TipoMovimentacao {
+public enum TransactionType {
     ENTRADA,
     SAIDA
 }

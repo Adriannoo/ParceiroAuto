@@ -1,27 +1,29 @@
 package br.edu.uniamerica.parceiro_auto.service;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.MovimentacaoRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.MovimentacaoResponseDTO;
-import br.edu.uniamerica.parceiro_auto.entity.enums.TipoMovimentacao;
-import br.edu.uniamerica.parceiro_auto.repository.MovimentacaoRepository;
-import br.edu.uniamerica.parceiro_auto.entity.Movimentacao;
+import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionResponseDTO;
+import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
+import br.edu.uniamerica.parceiro_auto.repository.TransactionRepository;
+import br.edu.uniamerica.parceiro_auto.entity.Transaction;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+
+//Refatorar service
 @Service
-public class MovimentacaoService {
+public class TransactionService {
 
-    private final MovimentacaoRepository movimentacaoRepository;
+    private final TransactionRepository movimentacaoRepository;
 
-    public MovimentacaoService(MovimentacaoRepository movimentacaoRepository) {
+    public TransactionService(TransactionRepository movimentacaoRepository) {
         this.movimentacaoRepository = movimentacaoRepository;
     }
 
-    public MovimentacaoResponseDTO criar(MovimentacaoRequestDTO dto) {
-        Movimentacao entity = new Movimentacao();
+    public TransactionResponseDTO criar(TransactionRequestDTO dto) {
+        Transaction entity = new Transaction();
 
         entity.setEmpresa(dto.empresa());
         entity.setConta(dto.conta());
@@ -32,14 +34,14 @@ public class MovimentacaoService {
         entity.setData(dto.data());
         entity.setForma(dto.forma());
 
-        Movimentacao salvo = movimentacaoRepository.save(entity);
+        Transaction salvo = movimentacaoRepository.save(entity);
 
         return toResponseDTO(salvo);
     }
 
     // Metodo privado para converter entity em DTO. Evita duplicacao de codigo e facilita manutencao
-    public MovimentacaoResponseDTO toResponseDTO(Movimentacao entity) {
-        return new MovimentacaoResponseDTO(
+    public TransactionResponseDTO toResponseDTO(Transaction entity) {
+        return new TransactionResponseDTO(
                 entity.getId(),
                 entity.getEmpresa(),
                 entity.getConta(),
@@ -52,8 +54,8 @@ public class MovimentacaoService {
         );
     }
 
-    public MovimentacaoResponseDTO atualizar(Long id, MovimentacaoRequestDTO dto) {
-        Movimentacao entity = movimentacaoRepository.findById(id)
+    public TransactionResponseDTO atualizar(Long id, TransactionRequestDTO dto) {
+        Transaction entity = movimentacaoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Movimentacao nao encontrada com o ID: " + id));
 
         entity.setEmpresa(dto.empresa());
@@ -65,26 +67,26 @@ public class MovimentacaoService {
         entity.setData(dto.data());
         entity.setForma(dto.forma());
 
-        Movimentacao atualizado = movimentacaoRepository.save(entity);
+        Transaction atualizado = movimentacaoRepository.save(entity);
 
         return toResponseDTO(atualizado);
     }
 
-    public List<MovimentacaoResponseDTO> listar() {
+    public List<TransactionResponseDTO> listar() {
         return movimentacaoRepository.findAll()
                 .stream()
                 .map(this::toResponseDTO)
                 .toList();
     }
 
-    public MovimentacaoResponseDTO buscarPorId(Long id) {
-        Movimentacao entity = movimentacaoRepository.findById(id)
+    public TransactionResponseDTO buscarPorId(Long id) {
+        Transaction entity = movimentacaoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Movimentacao nao encontrada com o ID: " + id));
 
         return toResponseDTO(entity);
     }
 
-    public List<MovimentacaoResponseDTO> filtrarPorTipo(TipoMovimentacao tipo) {
+    public List<TransactionResponseDTO> filtrarPorTipo(TransactionType tipo) {
         return movimentacaoRepository.findByTipo(tipo)
                 .stream()
                 .map(this::toResponseDTO)
@@ -92,7 +94,7 @@ public class MovimentacaoService {
     }
 
     public void deletar(Long id) {
-        Movimentacao entity = movimentacaoRepository.findById(id)
+        Transaction entity = movimentacaoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Movimentacao nao encontrada com o ID: " + id));
 
         movimentacaoRepository.delete(entity);
