@@ -3,9 +3,8 @@ package br.edu.uniamerica.parceiro_auto.entity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionForm;
+import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -50,18 +49,18 @@ public class Transaction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TransactionType tipo;
+    private TransactionType type;
 
     @Column(length = 255)
-    private String descricao;
+    private String description;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal valor;
+    private BigDecimal value;
 
     @Column(nullable = false)
-    private LocalDate data;
+    private LocalDate date;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TransactionForm forma;
+    private TransactionMethod method;
 }

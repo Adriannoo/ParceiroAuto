@@ -2,7 +2,7 @@ package br.edu.uniamerica.parceiro_auto.entity;
 
 import java.time.LocalDate;
 
-import br.edu.uniamerica.parceiro_auto.entity.enums.FrequencyType;
+import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -39,14 +39,14 @@ public class RecurrenceRule {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private FrequencyType frequencia;
+    private TransactionMethod method;
 
     @Column(nullable = false)
-    private LocalDate dataInicio;
+    private LocalDate startDate;
 
     @Column
-    private LocalDate dataFim;
+    private LocalDate endDate;
 
     @Column(nullable = false)
-    private LocalDate ultimaExecucao;
+    private LocalDate lastExecution;
 }

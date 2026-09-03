@@ -1,6 +1,6 @@
 package br.edu.uniamerica.parceiro_auto.entity.enums;
 
-public enum TransactionForm {
+public enum TransactionMethod{
     PIX,
     CARTAO,
     DINHEIRO

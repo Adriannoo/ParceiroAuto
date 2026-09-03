@@ -25,29 +25,30 @@ import lombok.ToString;
 @Entity
 @Table(name = "bank_account")
 public class BankAccount {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @Column(nullable = false, length = 50)
-  private String banco;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false, length = 4)
-  private String agencia;
+    @Column(nullable = false, length = 50)
+    private String bankName;
 
-  @Column(nullable = false, length = 13)
-  private String numeroConta;
+    @Column(nullable = false, length = 4)
+    private String branch;
 
-  @Column(nullable = false, length = 20)
-  private String tipoConta;
+    @Column(nullable = false, length = 13)
+    private String accountNumber;
 
-  @Column(nullable = false, precision = 19, scale = 2)
-  private BigDecimal saldo = BigDecimal.ZERO;
+    @Column(nullable = false, length = 20)
+    private String accountType;
 
-  @Column(nullable = false)
-  private boolean contaPadrao;
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal balance = BigDecimal.ZERO;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "fk_id_company", nullable = false)
-  private Company company;
+    @Column(nullable = false)
+    private boolean defaultAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_id_company", nullable = false)
+    private Company company;
 }

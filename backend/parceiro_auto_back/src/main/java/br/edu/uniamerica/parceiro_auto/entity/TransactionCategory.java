@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,7 +29,9 @@ import lombok.ToString;
 @Entity
 @Table(
     name = "transaction_category",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"name", "fk_id_company"})
+    uniqueConstraints = @UniqueConstraint(
+        columnNames = {"name", "fk_id_company"}
+    )
 )
 public class TransactionCategory {
 
@@ -45,7 +48,7 @@ public class TransactionCategory {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private TransactionType tipo;
+    private TransactionType type;
 
     @Column(nullable = false)
     private boolean active;

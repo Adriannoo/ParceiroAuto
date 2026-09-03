@@ -1,15 +1,23 @@
 package br.edu.uniamerica.parceiro_auto.repository;
 
-import br.edu.uniamerica.parceiro_auto.entity.Transaction;
-import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import java.time.LocalDate;
 import java.util.List;
 
-public interface TransactionRepository extends JpaRepository<Transaction, Long>{
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-    // Spring Data JPA faz as querys sozinhas, so precisa declarar os metodos na
+import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
+import br.edu.uniamerica.parceiro_auto.entity.Company;
+import br.edu.uniamerica.parceiro_auto.entity.Transaction;
+import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
 
-    List<Transaction> findByTipo(TransactionType tipo);
+@Repository
+public interface TransactionRepository extends JpaRepository<Transaction, Long> {
+    List<Transaction> findByBankAccount(BankAccount bankAccount);
 
+    List<Transaction> findByCompany(Company company);
+
+    List<Transaction> findByCompanyAndTransactionCategory(Company company, TransactionCategory category);
+
+    List<Transaction> findByCompanyAndDateBetween(Company company, LocalDate startDate, LocalDate endDate);
 }

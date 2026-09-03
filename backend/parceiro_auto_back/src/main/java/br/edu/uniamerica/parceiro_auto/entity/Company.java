@@ -24,19 +24,20 @@ import lombok.ToString;
 @Entity
 @Table(name = "company")
 public class Company {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @Column(nullable = false, unique = true, length = 14)
-  private String cnpj;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false, length = 50)
-  private String razaoSocial;
+    @Column(nullable = false, unique = true, length = 14)
+    private String cnpj;
 
-  @Column(nullable = false, length = 50)
-  private String nomeFantasia;
+    @Column(nullable = false, length = 50)
+    private String legalName;
 
-  @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
-  private List<UserCompany> userCompanies;
+    @Column(nullable = false, length = 50)
+    private String tradeName;
+
+    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+    private List<UserCompany> userCompanies;
 }
