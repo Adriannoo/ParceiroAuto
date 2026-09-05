@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/backend/parceiro_auto_back/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/projeto-4periodo/src/main/java" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -23,5 +24,15 @@
     <orderEntry type="library" name="Maven: org.springframework.data:spring-data-jpa:4.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.data:spring-data-commons:4.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-web:7.0.8" level="project" />
+    <orderEntry type="module-library" scope="PROVIDED">
+      <library>
+        <CLASSES>
+          <root url="jar://$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="library" name="Maven: org.springframework:spring-tx:7.0.8" level="project" />
   </component>
 </module>
