@@ -72,7 +72,7 @@ export class ContaService {
 
   private acessivel(conta: ContaBancaria): boolean {
     const usuarioId = this.usuarioId();
-    return usuarioId !== null && conta.usuariosId.includes(usuarioId);
+    return usuarioId !== null && (this.authService.temPapel('dono') || conta.usuariosId.includes(usuarioId));
   }
 
   private proximoId(contas: ContaBancaria[]): number {

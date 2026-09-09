@@ -86,7 +86,7 @@ export class RegisterComponent {
       nome,
       email,
       senha: password,
-      papel: 'usuario',
+      papel: 'dono',
       ativo: true,
     }).subscribe({
       next: () => {

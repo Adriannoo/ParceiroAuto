@@ -108,7 +108,13 @@ export class EmpresaService {
   private podeAcessar(usuariosId: number[]): boolean {
     const usuarioId = this.getUsuarioLogadoId();
     if (!usuarioId) return false;
+    if (this.authService.temPapel('dono')) return true;
     return usuariosId.includes(usuarioId);
+  }
+
+  temAcessoEmpresa(id: number): boolean {
+    const empresa = this.ler().find((item) => item.id === id);
+    return empresa !== undefined && this.podeAcessar(empresa.usuariosId);
   }
 
   listar(): Observable<Empresa[]> {
@@ -134,6 +140,9 @@ export class EmpresaService {
   }
 
   criar(dados: Omit<Empresa, 'id' | 'usuariosId'>): Observable<Empresa> {
+    if (!this.authService.podeGerenciarEmpresas()) {
+      return throwError(() => new Error('Apenas o dono pode gerenciar empresas.'));
+    }
     const empresas = this.ler();
     const usuarioId = this.getUsuarioLogadoId();
 
@@ -154,6 +163,9 @@ export class EmpresaService {
   }
 
   atualizar(empresa: Empresa): Observable<Empresa> {
+    if (!this.authService.podeGerenciarEmpresas()) {
+      return throwError(() => new Error('Apenas o dono pode gerenciar empresas.'));
+    }
     const empresas = this.ler();
     const indice = empresas.findIndex((e) => e.id === empresa.id);
 
@@ -173,6 +185,9 @@ export class EmpresaService {
   }
 
   excluir(id: number): Observable<void> {
+    if (!this.authService.podeGerenciarEmpresas()) {
+      return throwError(() => new Error('Apenas o dono pode gerenciar empresas.'));
+    }
     const empresas = this.ler();
     const empresa = empresas.find((e) => e.id === id);
 

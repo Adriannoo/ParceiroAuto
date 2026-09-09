@@ -3,6 +3,8 @@ import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { Movimentacao } from './movimentacao.model';
 import { ContaService } from '../conta/conta.service';
+import { AuthService } from '../../services/auth.service';
+import { EmpresaService } from '../empresa/empresa.service';
 
 @Injectable({ providedIn: 'root' })
 export class MovimentacaoService {
@@ -10,6 +12,8 @@ export class MovimentacaoService {
   private readonly CHAVE_LEGADA = 'parceiro-auto:movimentacoes';
   private readonly LATENCIA = 300;
   private readonly contaService = inject(ContaService);
+  private readonly authService = inject(AuthService);
+  private readonly empresaService = inject(EmpresaService);
 
   private readonly SEMENTE: Movimentacao[] = [
     {
@@ -131,13 +135,13 @@ export class MovimentacaoService {
   }
 
   listar(): Observable<Movimentacao[]> {
-    return of(this.ler()).pipe(delay(this.LATENCIA));
+    return of(this.ler().filter((movimentacao) => this.empresaService.temAcessoEmpresa(movimentacao.empresaId))).pipe(delay(this.LATENCIA));
   }
 
   buscarPorId(id: number): Observable<Movimentacao> {
     const movimentacao = this.ler().find((m) => m.id === id);
 
-    if (!movimentacao) {
+    if (!movimentacao || !this.empresaService.temAcessoEmpresa(movimentacao.empresaId)) {
       return throwError(() => new Error(`Movimentação ${id} não encontrada.`));
     }
 
@@ -145,6 +149,12 @@ export class MovimentacaoService {
   }
 
   criar(dados: Omit<Movimentacao, 'id'>): Observable<Movimentacao> {
+    if (!this.authService.podeGerenciarLancamentos()) {
+      return throwError(() => new Error('Seu perfil não pode alterar lançamentos.'));
+    }
+    if (!this.empresaService.temAcessoEmpresa(dados.empresaId)) {
+      return throwError(() => new Error('Acesso negado à empresa do lançamento.'));
+    }
     const impacto = this.impacto(dados);
     if (!this.contaService.ajustarSaldo(dados.contaId, impacto)) {
       return throwError(() => new Error(`Conta ${dados.contaId} não encontrada.`));
@@ -160,6 +170,12 @@ export class MovimentacaoService {
   }
 
   atualizar(movimentacao: Movimentacao): Observable<Movimentacao> {
+    if (!this.authService.podeGerenciarLancamentos()) {
+      return throwError(() => new Error('Seu perfil não pode alterar lançamentos.'));
+    }
+    if (!this.empresaService.temAcessoEmpresa(movimentacao.empresaId)) {
+      return throwError(() => new Error('Acesso negado à empresa do lançamento.'));
+    }
     const movimentacoes = this.ler();
     const indice = movimentacoes.findIndex((m) => m.id === movimentacao.id);
 
@@ -188,10 +204,13 @@ export class MovimentacaoService {
   }
 
   excluir(id: number): Observable<void> {
+    if (!this.authService.podeGerenciarLancamentos()) {
+      return throwError(() => new Error('Seu perfil não pode alterar lançamentos.'));
+    }
     const movimentacoes = this.ler();
     const movimentacao = movimentacoes.find((item) => item.id === id);
 
-    if (!movimentacao) {
+    if (!movimentacao || !this.empresaService.temAcessoEmpresa(movimentacao.empresaId)) {
       return throwError(() => new Error(`Movimentação ${id} não encontrada.`));
     }
     if (!this.contaService.ajustarSaldo(movimentacao.contaId, -this.impacto(movimentacao))) {

@@ -33,6 +33,8 @@ export const routes: Routes = [
 
       {
         path: 'empresas',
+        canActivate: [AuthGuard],
+        data: { roles: ['dono'] },
         children: [
           { path: '', component: EmpresaLista, title: 'Empresas' },
           { path: 'nova', component: EmpresaForm, title: 'Nova empresa' },
@@ -44,6 +46,8 @@ export const routes: Routes = [
 
       {
         path: 'lancamentos',
+        canActivate: [AuthGuard],
+        data: { roles: ['dono', 'gerente'] },
         children: [
           { path: '', component: MovimentacaoLista, title: 'Lançamentos' },
           { path: 'novo', component: MovimentacaoForm, title: 'Novo lançamento' },
@@ -54,6 +58,8 @@ export const routes: Routes = [
 
       {
         path: 'conta',
+        canActivate: [AuthGuard],
+        data: { roles: ['dono', 'gerente'] },
         children: [
           { path: '', component: ContaLista, title: 'Contas bancárias' },
           { path: 'nova', component: ContaForm, title: 'Nova conta bancária' },
@@ -62,8 +68,8 @@ export const routes: Routes = [
           { path: '**', redirectTo: '' },
         ],
       },
-      { path: 'relatorios', component: Relatorios },
-      { path: 'gestao-acessos', component: GestaoAcessos },
+      { path: 'relatorios', component: Relatorios, canActivate: [AuthGuard], data: { roles: ['dono', 'gerente', 'visualizador'] } },
+      { path: 'gestao-acessos', component: GestaoAcessos, canActivate: [AuthGuard], data: { roles: ['dono'] } },
     ],
   },
 ];

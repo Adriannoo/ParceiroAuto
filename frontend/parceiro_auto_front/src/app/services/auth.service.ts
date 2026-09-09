@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { Usuario } from '../models/usuario.model';
+import { Papel, Usuario, papelNormalizado } from '../models/usuario.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -15,7 +15,7 @@ export class AuthService {
       nome: 'Gustavo Mendes',
       email: 'gustavo@empresa.com',
       senha: '123456',
-      papel: 'admin',
+      papel: 'dono',
       empresasId: [1, 2],
       ativo: true,
     },
@@ -24,7 +24,7 @@ export class AuthService {
       nome: 'Maria Silva',
       email: 'maria@empresa.com',
       senha: '123456',
-      papel: 'usuario',
+      papel: 'gerente',
       empresasId: [1],
       ativo: true,
     },
@@ -33,7 +33,7 @@ export class AuthService {
       nome: 'João Santos',
       email: 'joao@empresa.com',
       senha: '123456',
-      papel: 'usuario',
+      papel: 'visualizador',
       empresasId: [2, 3],
       ativo: true,
     },
@@ -100,6 +100,73 @@ export class AuthService {
 
   getUsuarioLogado(): Usuario | null {
     return this.lerLogado();
+  }
+
+  papelAtual(): Exclude<Papel, 'admin' | 'usuario'> | null {
+    const usuario = this.getUsuarioLogado();
+    return usuario ? papelNormalizado(usuario.papel) : null;
+  }
+
+  temPapel(...papeis: Array<Exclude<Papel, 'admin' | 'usuario'>>): boolean {
+    const papel = this.papelAtual();
+    return papel !== null && papeis.includes(papel);
+  }
+
+  podeGerenciarFuncionarios(): boolean { return this.temPapel('dono'); }
+  podeGerenciarEmpresas(): boolean { return this.temPapel('dono'); }
+  podeGerenciarLancamentos(): boolean { return this.temPapel('dono', 'gerente'); }
+
+  listarUsuarios(): Usuario[] {
+    return this.lerUsuarios();
+  }
+
+  criarFuncionario(dados: Omit<Usuario, 'id' | 'empresasId'>, empresasId: number[]): Observable<Usuario> {
+    if (!this.podeGerenciarFuncionarios()) {
+      return throwError(() => new Error('Apenas o dono pode gerenciar funcionários.'));
+    }
+
+    const usuarios = this.lerUsuarios();
+    if (usuarios.some((usuario) => usuario.email.toLowerCase() === dados.email.toLowerCase())) {
+      return throwError(() => new Error('Email já cadastrado'));
+    }
+
+    const novoUsuario: Usuario = {
+      ...dados,
+      email: dados.email.trim().toLowerCase(),
+      id: usuarios.length > 0 ? Math.max(...usuarios.map((usuario) => usuario.id)) + 1 : 1,
+      empresasId: [...empresasId],
+    };
+
+    usuarios.push(novoUsuario);
+    this.gravarUsuarios(usuarios);
+    return of(novoUsuario).pipe(delay(this.LATENCIA));
+  }
+
+  atualizarFuncionario(usuario: Usuario, empresasId: number[]): Observable<Usuario> {
+    if (!this.podeGerenciarFuncionarios()) {
+      return throwError(() => new Error('Apenas o dono pode gerenciar funcionários.'));
+    }
+
+    const usuarios = this.lerUsuarios();
+    const indice = usuarios.findIndex((item) => item.id === usuario.id);
+    if (indice === -1) return throwError(() => new Error('Funcionário não encontrado.'));
+
+    const atualizado = { ...usuario, empresasId: [...empresasId] };
+    usuarios[indice] = atualizado;
+    this.gravarUsuarios(usuarios);
+    return of(atualizado).pipe(delay(this.LATENCIA));
+  }
+
+  excluirFuncionario(id: number): Observable<void> {
+    if (!this.podeGerenciarFuncionarios()) {
+      return throwError(() => new Error('Apenas o dono pode gerenciar funcionários.'));
+    }
+    if (this.getUsuarioLogado()?.id === id) {
+      return throwError(() => new Error('O dono não pode excluir o próprio acesso.'));
+    }
+
+    this.gravarUsuarios(this.lerUsuarios().filter((usuario) => usuario.id !== id));
+    return of(void 0).pipe(delay(this.LATENCIA));
   }
 
   registrar(dados: Omit<Usuario, 'id' | 'empresasId'>): Observable<Usuario> {

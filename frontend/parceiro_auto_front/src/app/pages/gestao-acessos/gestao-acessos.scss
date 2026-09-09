@@ -1,16 +1,27 @@
-.card {
-  background-color: #f2f2f2;
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s ease;
+.cabecalho { display: flex; justify-content: space-between; align-items: end; gap: 1rem; margin-bottom: 1.5rem; }
+.cabecalho h2 { margin: .25rem 0; }
+.cabecalho p { color: #667085; margin: 0; }
+.eyebrow { color: #1e73d8; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.painel { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.25rem; box-shadow: 0 2px 8px rgba(16, 24, 40, .05); }
+.painel-titulo { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+.painel h3 { font-size: 1.1rem; margin: 0; }
+.painel-titulo span { color: #667085; font-size: .85rem; }
+td strong, td small { display: block; }
+td small { color: #667085; }
+.empresas { max-width: 190px; color: #667085; font-size: .85rem; }
+.papel, .status { background: #eef2f6; border-radius: 999px; color: #475467; display: inline-block; font-size: .75rem; font-weight: 600; padding: .25rem .55rem; }
+.status.ativo { background: #e8f7ee; color: #18794e; }
+.acoes { display: flex; gap: .35rem; justify-content: end; }
+.formulario { display: grid; gap: .9rem; }
+.formulario label { color: #344054; display: grid; font-size: .875rem; font-weight: 600; gap: .35rem; }
+.formulario input[type='text'], .formulario input[type='email'], .formulario input[type='password'], .formulario select { border: 1px solid #d0d5dd; border-radius: 5px; padding: .55rem .7rem; width: 100%; }
+.check { align-items: center; display: flex !important; font-weight: 400 !important; grid-template-columns: auto 1fr; }
+fieldset { border: 1px solid #e5e7eb; border-radius: 5px; display: grid; gap: .5rem; padding: .8rem; }
+legend { float: none; font-size: .85rem; margin: 0; padding: 0 .3rem; width: auto; }
+.acoes-form { display: flex; gap: .5rem; justify-content: end; }
+.vazio { color: #667085; padding: 1rem; text-align: center; }
 
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-}
-
-.card-title {
-  font-weight: 600;
-  color: #1e73d8;
+@media (max-width: 600px) {
+  .cabecalho { align-items: start; flex-direction: column; }
+  .acoes { flex-direction: column; }
 }

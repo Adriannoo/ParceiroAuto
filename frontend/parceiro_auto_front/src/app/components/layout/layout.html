@@ -16,6 +16,7 @@
 
       <p class="grupo">Cadastros</p>
 
+      @if (podeVerEmpresas()) {
       <a class="item" routerLink="/empresas" routerLinkActive="ativo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18M5 21V7l7-4 7 4v14"/>
@@ -23,8 +24,10 @@
         </svg>
         Empresas
       </a>
+      }
 
       <!-- Depois so tirar o "desabilitado" e colocar o routerLink="/conta" routerLinkActive="ativo" no item abaixo, quando a rota estiver pronta -->
+      @if (podeVerLancamentos()) {
       <a class="item" routerLink="/conta" routerLinkActive="ativo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18M3 10h18M5 6l7-3 7 3v4H5z"/>
@@ -32,42 +35,49 @@
         </svg>
         Contas
       </a>
+      }
 
 
       <p class="grupo">Financeiro</p>
 
+      @if (podeVerLancamentos()) {
       <a class="item" routerLink="/lancamentos" routerLinkActive="ativo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M7 10h14l-4-4M17 14H3l4 4"/>
         </svg>
         Fluxo de caixa
       </a>
+      }
       
       <!-- Depois so tirar o "desabilitado" e colocar o routerLink="/relatorios" routerLinkActive="ativo" no item abaixo, quando a rota estiver pronta -->
-      <a class="item desabilitado">
+      @if (podeVerRelatorios()) {
+      <a class="item" routerLink="/relatorios" routerLinkActive="ativo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
         </svg>
-        Relatórios (Em breve)
+        Relatórios
       </a>
+      }
 
       <p class="grupo">Sistema</p>
 
       <!-- Depois so tirar o "desabilitado" e colocar o routerLink="/gestao-acessos" routerLinkActive="ativo" no item abaixo, quando a rota estiver pronta -->
-      <a class="item desabilitado">
+      @if (podeVerGestao()) {
+      <a class="item" routerLink="/gestao-acessos" routerLinkActive="ativo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/>
           <path d="M16 6a3 3 0 0 1 0 6M18 15a4 4 0 0 1 3 4v1"/>
         </svg>
-        Gestão de acessos <br> (Em breve)
+        Gestão de acessos
       </a>
+      }
     </div>
 
     <div class="rodape">
       <span class="avatar">{{ initialsUsuario() }}</span>
       <span class="usuario">
         <span class="usuario-nome">{{ usuario()?.nome ?? 'Usuário' }}</span>
-        <span class="usuario-papel">{{ usuario()?.papel === 'admin' ? 'Administrador' : 'Usuário' }}</span>
+        <span class="usuario-papel">{{ papelLegivel() }}</span>
       </span>
       <button 
         type="button"

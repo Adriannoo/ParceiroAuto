@@ -1,42 +1,52 @@
-<h2 class="mb-4">Gestao Acessos</h2>
-
-<div class="row g-3 mb-3">
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Card 1</h5>
-      </div>
-    </div>
+<div class="cabecalho">
+  <div>
+    <span class="eyebrow">Sistema</span>
+    <h2>Funcionários</h2>
+    <p>Defina o papel e as empresas que cada pessoa poderá acessar.</p>
   </div>
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Card 2</h5>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Card 3</h5>
-      </div>
-    </div>
-  </div>
+  <button type="button" class="btn btn-primary" (click)="novo()">Novo funcionário</button>
 </div>
 
-<div class="row g-3">
-  <div class="col-md-6">
-    <div class="card" style="height: 250px;">
-      <div class="card-body">
-        <h5 class="card-title">Card grande 1</h5>
+@if (mensagem()) { <div class="alert alert-success">{{ mensagem() }}</div> }
+@if (erro()) { <div class="alert alert-danger">{{ erro() }}</div> }
+
+<div class="row g-4">
+  <div class="col-xl-7">
+    <section class="painel">
+      <div class="painel-titulo"><h3>Acessos cadastrados</h3><span>{{ funcionarios().length }} funcionário(s)</span></div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Funcionário</th><th>Papel</th><th>Empresas</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            @for (usuario of funcionarios(); track usuario.id) {
+              <tr>
+                <td><strong>{{ usuario.nome }}</strong><small>{{ usuario.email }}</small></td>
+                <td><span class="papel">{{ papelLegivel(usuario.papel) }}</span></td>
+                <td class="empresas">{{ empresasLegiveis(usuario) }}</td>
+                <td><span [class]="usuario.ativo ? 'status ativo' : 'status'">{{ usuario.ativo ? 'Ativo' : 'Inativo' }}</span></td>
+                <td class="acoes"><button type="button" class="btn btn-sm btn-outline-primary" (click)="editar(usuario)">Editar</button><button type="button" class="btn btn-sm btn-outline-danger" (click)="excluir(usuario)">Excluir</button></td>
+              </tr>
+            } @empty { <tr><td colspan="5" class="vazio">Nenhum funcionário cadastrado.</td></tr> }
+          </tbody>
+        </table>
       </div>
-    </div>
+    </section>
   </div>
-  <div class="col-md-6">
-    <div class="card" style="height: 250px;">
-      <div class="card-body">
-        <h5 class="card-title">Card grande 2</h5>
-      </div>
-    </div>
+
+  <div class="col-xl-5">
+    <section class="painel formulario">
+      <h3>{{ selecionado() ? 'Editar funcionário' : 'Novo funcionário' }}</h3>
+      <label>Nome completo<input type="text" [(ngModel)]="nome" /></label>
+      <label>Email de acesso<input type="email" [(ngModel)]="email" /></label>
+      <label>Senha{{ selecionado() ? ' (deixe em branco para manter)' : '' }}<input type="password" [(ngModel)]="senha" /></label>
+      <label>Papel<select [(ngModel)]="papel"><option value="gerente">Gerente</option><option value="visualizador">Visualizador</option></select></label>
+      <label class="check"><input type="checkbox" [(ngModel)]="ativo" /> Acesso ativo</label>
+      <fieldset><legend>Empresas permitidas</legend>
+        @for (empresa of empresas(); track empresa.id) {
+          <label class="check"><input type="checkbox" [checked]="empresaSelecionada(empresa.id)" (change)="alternarEmpresa(empresa.id)" /> {{ empresa.nomeFantasia }}</label>
+        } @empty { <p class="vazio">Nenhuma empresa cadastrada.</p> }
+      </fieldset>
+      <div class="acoes-form"><button type="button" class="btn btn-light" (click)="novo()">Limpar</button><button type="button" class="btn btn-primary" [disabled]="carregando()" (click)="salvar()">{{ carregando() ? 'Salvando...' : 'Salvar acesso' }}</button></div>
+    </section>
   </div>
 </div>
