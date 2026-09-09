@@ -11,6 +11,8 @@ import {
 } from '../empresa.model';
 import { MovimentacaoService } from '../../movimentacao/movimentacao.service';
 import { Movimentacao, rotuloForma } from '../../movimentacao/movimentacao.model';
+import { ContaBancaria } from '../../conta/conta.model';
+import { ContaService } from '../../conta/conta.service';
 
 @Component({
   selector: 'app-empresa-lancamentos',
@@ -22,9 +24,11 @@ export class EmpresaLancamentos implements OnInit {
   private empresaService = inject(EmpresaService);
   private movimentacaoService = inject(MovimentacaoService);
   private rota = inject(ActivatedRoute);
+  private contaService = inject(ContaService);
 
   empresa = signal<Empresa | null>(null);
   movimentacoes = signal<Movimentacao[]>([]);
+  contas = signal<ContaBancaria[]>([]);
   carregando = signal(false);
   erro = signal<string | null>(null);
 
@@ -53,9 +57,11 @@ export class EmpresaLancamentos implements OnInit {
     forkJoin({
       empresa: this.empresaService.buscarPorId(id),
       movimentacoes: this.movimentacaoService.listar(),
+      contas: this.contaService.listar(),
     }).subscribe({
-      next: ({ empresa, movimentacoes }) => {
+      next: ({ empresa, movimentacoes, contas }) => {
         this.empresa.set(empresa);
+        this.contas.set(contas);
         this.movimentacoes.set(movimentacoes.filter((m) => m.empresaId === id));
         this.carregando.set(false);
       },
@@ -84,6 +90,10 @@ export class EmpresaLancamentos implements OnInit {
 
   forma(m: Movimentacao): string {
     return rotuloForma(m.forma);
+  }
+
+  conta(m: Movimentacao): string {
+    return this.contas().find((conta) => conta.id === m.contaId)?.nome ?? 'Conta removida';
   }
 
   moeda(valor: number): string {

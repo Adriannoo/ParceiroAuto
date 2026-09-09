@@ -1,0 +1,34 @@
+<div class="topo">
+  <div>
+    <a routerLink="/conta" class="link-secondary">Contas bancárias</a>
+    @if (conta(); as contaAtual) {
+      <h2 class="mb-1">{{ contaAtual.nome }}</h2>
+      <small class="text-muted">{{ contaAtual.banco }} · Agência {{ contaAtual.agencia }} · Conta {{ contaAtual.numero }}</small>
+    }
+  </div>
+  <a routerLink="/lancamentos/novo" class="btn btn-primary">Novo lançamento</a>
+</div>
+
+@if (conta(); as contaAtual) {
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="resumo"><small>Saldo atual</small><strong>{{ contaAtual.saldo | currency:'BRL' }}</strong></div></div>
+    <div class="col-md-4"><div class="resumo entrada"><small>Entradas</small><strong>{{ totalEntradas() | currency:'BRL' }}</strong></div></div>
+    <div class="col-md-4"><div class="resumo saida"><small>Saídas</small><strong>{{ totalSaidas() | currency:'BRL' }}</strong></div></div>
+  </div>
+}
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (carregando()) {
+      <div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando</span></div></div>
+    } @else if (lancamentos().length === 0) {
+      <div class="text-center py-5"><p class="text-muted mb-0">Nenhum lançamento encontrado para esta conta.</p></div>
+    } @else {
+      <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Forma</th><th class="text-end">Valor</th></tr></thead><tbody>
+        @for (lancamento of lancamentos(); track lancamento.id) {
+          <tr><td>{{ lancamento.data | date:'dd/MM/yyyy' }}</td><td>{{ lancamento.descricao }}</td><td>{{ lancamento.categoria }}</td><td>{{ lancamento.forma }}</td><td class="text-end" [class.text-success]="lancamento.tipo === 'ENTRADA'" [class.text-danger]="lancamento.tipo === 'SAIDA'">{{ lancamento.tipo === 'ENTRADA' ? '+' : '-' }} {{ lancamento.valor | currency:'BRL' }}</td></tr>
+        }
+      </tbody></table></div>
+    }
+  </div>
+</div>

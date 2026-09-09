@@ -1,0 +1,43 @@
+<div class="topo">
+  <div>
+    <h2 class="mb-1">Contas bancárias</h2>
+    <small class="text-muted">{{ contas().length }} contas · {{ contasAtivas() }} ativas</small>
+  </div>
+  <a routerLink="nova" class="btn btn-primary">Nova conta</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="resumo"><small>Saldo total</small><strong>{{ saldo() | currency:'BRL' }}</strong></div></div>
+  <div class="col-md-4"><div class="resumo"><small>Contas cadastradas</small><strong>{{ contas().length }}</strong></div></div>
+  <div class="col-md-4"><div class="resumo"><small>Contas ativas</small><strong>{{ contasAtivas() }}</strong></div></div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (carregando()) {
+      <div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando</span></div></div>
+    } @else if (contas().length === 0) {
+      <div class="text-center py-5 px-3"><p class="text-muted">Nenhuma conta bancária cadastrada.</p><a routerLink="nova" class="btn btn-primary">Cadastrar primeira conta</a></div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light"><tr><th>Conta</th><th>Banco</th><th>Agência</th><th>Número</th><th>Tipo</th><th>Saldo</th><th>Situação</th><th class="text-end">Ações</th></tr></thead>
+          <tbody>
+            @for (conta of contas(); track conta.id) {
+              <tr>
+                <td><strong>{{ conta.nome }}</strong></td><td>{{ conta.banco }}</td><td>{{ conta.agencia }}</td><td>{{ conta.numero }}</td>
+                <td>{{ tipoLegivel(conta) }}</td><td>{{ conta.saldo | currency:'BRL' }}</td>
+                <td><span class="pastilha" [class.off]="!conta.ativa">{{ conta.ativa ? 'Ativa' : 'Inativa' }}</span></td>
+                <td class="text-end text-nowrap"><a [routerLink]="[conta.id, 'lancamentos']" class="btn btn-sm btn-outline-secondary me-1">Lançamentos</a><a [routerLink]="[conta.id, 'editar']" class="btn btn-sm btn-outline-primary me-1">Editar</a><button type="button" class="btn btn-sm btn-outline-danger" (click)="abrirExclusao(conta)">Excluir</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+@if (contaParaExcluir(); as conta) {
+  <div class="modal fade show d-block" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Excluir conta</h5><button type="button" class="btn-close" aria-label="Fechar" (click)="fecharExclusao()"></button></div><div class="modal-body"><p>Excluir <strong>{{ conta.nome }}</strong>? Os lançamentos existentes serão mantidos.</p></div><div class="modal-footer"><button type="button" class="btn btn-light" (click)="fecharExclusao()">Cancelar</button><button type="button" class="btn btn-danger" (click)="excluir()">Excluir</button></div></div></div></div><div class="modal-backdrop fade show"></div>
+}

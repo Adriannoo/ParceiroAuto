@@ -5,7 +5,9 @@ import { RegisterComponent } from './components/register/register.component';
 import { Layout } from './components/layout/layout';
 
 import { Dashboard } from './pages/dashboard/dashboard';
-import { Conta } from './pages/conta/conta';
+import { ContaLista } from './pages/conta/conta-lista/conta-lista';
+import { ContaForm } from './pages/conta/conta-form/conta-form';
+import { ContaLancamentos } from './pages/conta/conta-lancamentos/conta-lancamentos';
 import { Relatorios } from './pages/relatorios/relatorios';
 import { GestaoAcessos } from './pages/gestao-acessos/gestao-acessos';
 
@@ -50,7 +52,16 @@ export const routes: Routes = [
         ],
       },
 
-      { path: 'conta', component: Conta },
+      {
+        path: 'conta',
+        children: [
+          { path: '', component: ContaLista, title: 'Contas bancárias' },
+          { path: 'nova', component: ContaForm, title: 'Nova conta bancária' },
+          { path: ':id/editar', component: ContaForm, title: 'Editar conta bancária' },
+          { path: ':id/lancamentos', component: ContaLancamentos, title: 'Lançamentos da conta' },
+          { path: '**', redirectTo: '' },
+        ],
+      },
       { path: 'relatorios', component: Relatorios },
       { path: 'gestao-acessos', component: GestaoAcessos },
     ],

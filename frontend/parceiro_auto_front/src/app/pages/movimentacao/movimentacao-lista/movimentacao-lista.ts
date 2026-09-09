@@ -6,6 +6,8 @@ import { MovimentacaoService } from '../movimentacao.service';
 import { Movimentacao, rotuloForma } from '../movimentacao.model';
 import { EmpresaService } from '../../empresa/empresa.service';
 import { Empresa } from '../../empresa/empresa.model';
+import { ContaBancaria } from '../../conta/conta.model';
+import { ContaService } from '../../conta/conta.service';
 
 type FiltroTipo = 'todas' | 'ENTRADA' | 'SAIDA';
 
@@ -18,9 +20,11 @@ type FiltroTipo = 'todas' | 'ENTRADA' | 'SAIDA';
 export class MovimentacaoLista implements OnInit {
   private movimentacaoService = inject(MovimentacaoService);
   private empresaService = inject(EmpresaService);
+  private contaService = inject(ContaService);
 
   movimentacoes = signal<Movimentacao[]>([]);
   empresas = signal<Empresa[]>([]);
+  contas = signal<ContaBancaria[]>([]);
   carregando = signal(false);
 
   termoBusca = signal('');
@@ -42,7 +46,7 @@ export class MovimentacaoLista implements OnInit {
           !termo ||
           m.descricao.toLowerCase().includes(termo) ||
           m.categoria.toLowerCase().includes(termo) ||
-          m.conta.toLowerCase().includes(termo),
+          this.nomeConta(m.contaId).toLowerCase().includes(termo),
       )
       .sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id);
   });
@@ -71,10 +75,12 @@ export class MovimentacaoLista implements OnInit {
     forkJoin({
       movimentacoes: this.movimentacaoService.listar(),
       empresas: this.empresaService.listar(),
+      contas: this.contaService.listar(),
     }).subscribe({
-      next: ({ movimentacoes, empresas }) => {
+      next: ({ movimentacoes, empresas, contas }) => {
         this.movimentacoes.set(movimentacoes);
         this.empresas.set(empresas);
+        this.contas.set(contas);
         this.carregando.set(false);
       },
       error: () => this.carregando.set(false),
@@ -83,6 +89,10 @@ export class MovimentacaoLista implements OnInit {
 
   nomeEmpresa(id: number): string {
     return this.empresas().find((e) => e.id === id)?.nomeFantasia ?? 'Empresa removida';
+  }
+
+  nomeConta(id: number): string {
+    return this.contas().find((conta) => conta.id === id)?.nome ?? 'Conta removida';
   }
 
   formaLegivel(movimentacao: Movimentacao): string {

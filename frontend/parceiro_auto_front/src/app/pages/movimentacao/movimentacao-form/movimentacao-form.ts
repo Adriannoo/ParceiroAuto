@@ -1,10 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { MovimentacaoService } from '../movimentacao.service';
-import { CATEGORIAS, CONTAS, FORMAS, TIPOS } from '../movimentacao.model';
+import { CATEGORIAS, FORMAS, TIPOS } from '../movimentacao.model';
 import { EmpresaService } from '../../empresa/empresa.service';
 import { Empresa } from '../../empresa/empresa.model';
+import { ContaBancaria } from '../../conta/conta.model';
+import { ContaService } from '../../conta/conta.service';
 
 @Component({
   selector: 'app-movimentacao-form',
@@ -16,15 +19,16 @@ export class MovimentacaoForm implements OnInit {
   private fb = inject(FormBuilder);
   private movimentacaoService = inject(MovimentacaoService);
   private empresaService = inject(EmpresaService);
+  private contaService = inject(ContaService);
   private router = inject(Router);
   private rota = inject(ActivatedRoute);
 
   tipos = TIPOS;
   formas = FORMAS;
-  contas = CONTAS;
   categorias = CATEGORIAS;
 
   empresas = signal<Empresa[]>([]);
+  contas = signal<ContaBancaria[]>([]);
   movimentacaoId = signal<number | null>(null);
   salvando = signal(false);
   erro = signal<string | null>(null);
@@ -36,7 +40,7 @@ export class MovimentacaoForm implements OnInit {
     valor: [null as number | null, [Validators.required, Validators.min(0.01)]],
     data: [this.hojeIso(), [Validators.required]],
     categoria: ['', [Validators.required]],
-    conta: ['', [Validators.required]],
+    contaId: [null as number | null, [Validators.required]],
     forma: ['PIX', [Validators.required]],
   });
 
@@ -45,13 +49,20 @@ export class MovimentacaoForm implements OnInit {
   }
 
   ngOnInit(): void {
-    this.empresaService.listar().subscribe((empresas) => {
-      this.empresas.set(empresas.filter((e) => e.ativa));
+    forkJoin({ empresas: this.empresaService.listar(), contas: this.contaService.listar() }).subscribe({
+      next: ({ empresas, contas }) => {
+        this.empresas.set(empresas.filter((e) => e.ativa));
+        this.contas.set(contas.filter((conta) => conta.ativa));
 
-      if (this.empresas().length === 0) {
-        this.erro.set('Cadastre uma empresa ativa antes de lançar movimentações.');
+        if (this.empresas().length === 0 || this.contas().length === 0) {
+          this.erro.set('Cadastre uma empresa ativa e uma conta bancária ativa antes de lançar movimentações.');
+          this.formulario.disable();
+        }
+      },
+      error: () => {
+        this.erro.set('Não foi possível carregar empresas e contas bancárias.');
         this.formulario.disable();
-      }
+      },
     });
 
     const id = this.rota.snapshot.paramMap.get('id');

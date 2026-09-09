@@ -11,7 +11,7 @@ export type FormaPagamento =
 export interface Movimentacao {
   id: number;
   empresaId: number;
-  conta: string;
+  contaId: number;
   categoria: string;
   tipo: TipoMovimentacao;
   descricao: string;
@@ -32,13 +32,6 @@ export const FORMAS: { valor: FormaPagamento; rotulo: string }[] = [
   { valor: 'CARTAO_DEBITO', rotulo: 'Cartão de débito' },
   { valor: 'BOLETO', rotulo: 'Boleto' },
   { valor: 'TRANSFERENCIA', rotulo: 'Transferência' },
-];
-
-export const CONTAS: string[] = [
-  'Conta Corrente',
-  'Conta Poupança',
-  'Caixa',
-  'Aplicação',
 ];
 
 export const CATEGORIAS: string[] = [

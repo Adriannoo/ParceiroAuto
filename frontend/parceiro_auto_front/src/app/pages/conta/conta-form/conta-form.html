@@ -1,0 +1,38 @@
+<h2 class="mb-4">{{ editando ? 'Editar conta bancária' : 'Nova conta bancária' }}</h2>
+
+<div class="card">
+  <div class="card-body p-4">
+    @if (erro()) {
+      <div class="alert alert-danger">{{ erro() }}</div>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
+
+      <h3 class="secao">Identificação da conta</h3>
+
+      <div class="row">
+        <div class="col-md-6 mb-3"><label class="form-label" for="nome">Nome da conta</label><input id="nome" type="text" class="form-control" placeholder="Ex.: Conta principal" [class.is-invalid]="invalido('nome')" formControlName="nome" />@if (invalido('nome')) {<div class="invalid-feedback d-block">Informe um nome para a conta.</div>}</div>
+        <div class="col-md-6 mb-3"><label class="form-label" for="banco">Banco ou instituição</label><input id="banco" type="text" class="form-control" placeholder="Ex.: Banco do Brasil" [class.is-invalid]="invalido('banco')" formControlName="banco" />@if (invalido('banco')) {<div class="invalid-feedback d-block">Informe o banco.</div>}</div>
+        <div class="col-md-4 mb-3"><label class="form-label" for="agencia">Agência</label><input id="agencia" type="text" class="form-control" formControlName="agencia" [class.is-invalid]="invalido('agencia')" />@if (invalido('agencia')) {<div class="invalid-feedback d-block">Informe a agência.</div>}</div>
+        <div class="col-md-4 mb-3"><label class="form-label" for="numero">Número da conta</label><input id="numero" type="text" class="form-control" formControlName="numero" [class.is-invalid]="invalido('numero')" />@if (invalido('numero')) {<div class="invalid-feedback d-block">Informe o número da conta.</div>}</div>
+        <div class="col-md-4 mb-3"><label class="form-label" for="tipo">Tipo de conta</label><select id="tipo" class="form-select" formControlName="tipo">@for (tipo of tipos; track tipo.valor) {<option [value]="tipo.valor">{{ tipo.rotulo }}</option>}</select></div>
+
+        <div class="col-md-4 mb-3"><label class="form-label" for="saldo">Saldo</label><input id="saldo" type="number" class="form-control" min="0" step="0.01" formControlName="saldo" [class.is-invalid]="invalido('saldo')" />@if (invalido('saldo')) {<div class="invalid-feedback d-block">Informe um saldo igual ou maior que zero.</div>}</div>
+        <div class="col-md-4 mb-3 d-flex align-items-end"><div class="form-check form-switch pb-2"><input class="form-check-input" type="checkbox" id="ativa" formControlName="ativa" /><label class="form-check-label" for="ativa">Conta ativa</label></div></div>
+      </div>
+
+      <hr class="my-4" />
+
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <a routerLink="/conta" class="btn btn-light">Cancelar</a>
+        <button type="button" class="btn btn-outline-secondary" (click)="limpar()">Limpar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="salvando()">
+          @if (salvando()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+          }
+          {{ editando ? 'Salvar alterações' : 'Cadastrar conta' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

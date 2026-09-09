@@ -1,0 +1,37 @@
+$azul: #2f7de1;
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.secao {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.4px;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+
+  &:not(:first-of-type) {
+    margin-top: 12px;
+  }
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 0.88rem;
+  color: #4a4a4a;
+}
+
+.form-text {
+  font-size: 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: $azul;
+  box-shadow: 0 0 0 0.2rem rgba(47, 125, 225, 0.15);
+}

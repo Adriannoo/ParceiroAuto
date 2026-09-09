@@ -1,18 +1,21 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { Movimentacao } from './movimentacao.model';
+import { ContaService } from '../conta/conta.service';
 
 @Injectable({ providedIn: 'root' })
 export class MovimentacaoService {
-  private readonly CHAVE = 'parceiro-auto:movimentacoes';
+  private readonly CHAVE = 'parceiro-auto:movimentacoes:v2';
+  private readonly CHAVE_LEGADA = 'parceiro-auto:movimentacoes';
   private readonly LATENCIA = 300;
+  private readonly contaService = inject(ContaService);
 
   private readonly SEMENTE: Movimentacao[] = [
     {
       id: 1,
       empresaId: 1,
-      conta: 'Conta Corrente',
+      contaId: 1,
       categoria: 'Vendas',
       tipo: 'ENTRADA',
       descricao: 'Venda de peças ao cliente Souza',
@@ -23,7 +26,7 @@ export class MovimentacaoService {
     {
       id: 2,
       empresaId: 1,
-      conta: 'Conta Corrente',
+      contaId: 1,
       categoria: 'Fornecedores',
       tipo: 'SAIDA',
       descricao: 'Compra de estoque - distribuidora Bosch',
@@ -34,7 +37,7 @@ export class MovimentacaoService {
     {
       id: 3,
       empresaId: 1,
-      conta: 'Conta Corrente',
+      contaId: 1,
       categoria: 'Salários',
       tipo: 'SAIDA',
       descricao: 'Folha de pagamento de julho',
@@ -45,7 +48,7 @@ export class MovimentacaoService {
     {
       id: 4,
       empresaId: 2,
-      conta: 'Caixa',
+      contaId: 3,
       categoria: 'Serviços',
       tipo: 'ENTRADA',
       descricao: 'Revisão completa - frota Martins',
@@ -56,7 +59,7 @@ export class MovimentacaoService {
     {
       id: 5,
       empresaId: 1,
-      conta: 'Conta Corrente',
+      contaId: 1,
       categoria: 'Aluguel',
       tipo: 'SAIDA',
       descricao: 'Aluguel do galpão',
@@ -67,7 +70,7 @@ export class MovimentacaoService {
     {
       id: 6,
       empresaId: 2,
-      conta: 'Conta Corrente',
+      contaId: 1,
       categoria: 'Vendas',
       tipo: 'ENTRADA',
       descricao: 'Venda balcão - lote de filtros',
@@ -79,8 +82,34 @@ export class MovimentacaoService {
 
   constructor() {
     if (localStorage.getItem(this.CHAVE) === null) {
-      this.gravar(this.SEMENTE);
+      this.migrarOuInicializar();
     }
+  }
+
+  private migrarOuInicializar(): void {
+    const legado = localStorage.getItem(this.CHAVE_LEGADA);
+
+    if (legado) {
+      try {
+        const movimentacoesLegadas = JSON.parse(legado) as Array<Omit<Movimentacao, 'contaId'> & { conta: string }>;
+        const mapaContas: Record<string, number> = {
+          'Conta Corrente': 1,
+          'Conta Poupança': 2,
+          Caixa: 3,
+          Aplicação: 2,
+        };
+        const migradas = movimentacoesLegadas.map(({ conta, ...movimentacao }) => ({
+          ...movimentacao,
+          contaId: mapaContas[conta] ?? 1,
+        }));
+        this.gravar(migradas);
+        return;
+      } catch {
+        // Inicializa com os exemplos quando o armazenamento legado estiver inválido.
+      }
+    }
+
+    this.gravar(this.SEMENTE);
   }
 
   private ler(): Movimentacao[] {
@@ -116,6 +145,11 @@ export class MovimentacaoService {
   }
 
   criar(dados: Omit<Movimentacao, 'id'>): Observable<Movimentacao> {
+    const impacto = this.impacto(dados);
+    if (!this.contaService.ajustarSaldo(dados.contaId, impacto)) {
+      return throwError(() => new Error(`Conta ${dados.contaId} não encontrada.`));
+    }
+
     const movimentacoes = this.ler();
     const nova: Movimentacao = { ...dados, id: this.gerarId(movimentacoes) };
 
@@ -133,6 +167,20 @@ export class MovimentacaoService {
       return throwError(() => new Error(`Movimentação ${movimentacao.id} não encontrada.`));
     }
 
+    const anterior = movimentacoes[indice];
+    const ajusteAnterior = this.contaService.ajustarSaldo(anterior.contaId, -this.impacto(anterior));
+    const ajusteAtual = this.contaService.ajustarSaldo(movimentacao.contaId, this.impacto(movimentacao));
+
+    if (!ajusteAnterior || !ajusteAtual) {
+      if (ajusteAnterior) {
+        this.contaService.ajustarSaldo(anterior.contaId, this.impacto(anterior));
+      }
+      if (ajusteAtual) {
+        this.contaService.ajustarSaldo(movimentacao.contaId, -this.impacto(movimentacao));
+      }
+      return throwError(() => new Error('Não foi possível atualizar o saldo da conta.'));
+    }
+
     movimentacoes[indice] = { ...movimentacao };
     this.gravar(movimentacoes);
 
@@ -140,7 +188,17 @@ export class MovimentacaoService {
   }
 
   excluir(id: number): Observable<void> {
-    this.gravar(this.ler().filter((m) => m.id !== id));
+    const movimentacoes = this.ler();
+    const movimentacao = movimentacoes.find((item) => item.id === id);
+
+    if (!movimentacao) {
+      return throwError(() => new Error(`Movimentação ${id} não encontrada.`));
+    }
+    if (!this.contaService.ajustarSaldo(movimentacao.contaId, -this.impacto(movimentacao))) {
+      return throwError(() => new Error(`Conta ${movimentacao.contaId} não encontrada.`));
+    }
+
+    this.gravar(movimentacoes.filter((m) => m.id !== id));
 
     return of(void 0).pipe(delay(this.LATENCIA));
   }
@@ -152,5 +210,10 @@ export class MovimentacaoService {
 
   restaurarExemplos(): void {
     this.gravar(this.SEMENTE);
+  }
+
+  private impacto(movimentacao: Pick<Movimentacao, 'tipo' | 'valor'>): number {
+    const valor = Math.round(movimentacao.valor * 100) / 100;
+    return movimentacao.tipo === 'ENTRADA' ? valor : -valor;
   }
 }
