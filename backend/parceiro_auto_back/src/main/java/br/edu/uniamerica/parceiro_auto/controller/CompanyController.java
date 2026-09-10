@@ -25,7 +25,10 @@ public class CompanyController {
         this.companyService = companyService;
     }
 
+    // Metodos embrulados no "ApiResponse", padroniza o formato de resposta dos endpoints e facilita com o front
+
     // End point para criar uma nova empresa
+    // Queremos devolver 201 CREATED, que e o status correto apra criacao. Por isso usamos ResponseEntity
     // LOCALHOST:8080/api/companies
     @PostMapping
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> criar(@RequestBody CompanyRequestDTO dto) {
@@ -42,21 +45,51 @@ public class CompanyController {
                 .body(new ApiResponse<>("Empresa criada com sucesso!", responseDTO));
     }
 
-    // End point para pegar os dados da empresa
+    // End point para pegar os dados da empresa pelo id
+    // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id) {
-        Optional<Company> company = companyService.findById(id)
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> buscarPorId(@PathVariable Long id) {
+        Company company = companyService.findById(id)
+                .orElseThrow(
+                        () -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Empresa nao encontrada"
+                        )
+                );
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Dados da empresa encontrados com sucesso!", CompanyMapper.toResponseDTO(company)));
+    }
+
+    // End point para listar todas as empesas
+    // Queremos devolver 200 OK, status generico para sucesso
+    // GET LOCALHOST:8080/api/companies
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<CompanyResponseDTO>>> findAll() {
+        List<CompanyResponseDTO> companies = companyService.findAll().stream()
+                .map(CompanyMapper::toResponseDTO)
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Empresas listadas com sucesso!", companies));
+    }
+
+    // End point para atualizar uma empesa
+    // Queremos devolver 200 OK, status generico para sucesso
+    // PUT LOCALHOST:8080/api/id
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @RequestBody CompanyRequestDTO dto) {
+        Company company = companyService.findById(id)
                 .orElseThrow(
                         () -> new ResponseStatusException(
                                 HttpStatus.NOT_FOUND, "Empresa nao encontrada"
                         )
                 );
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponse<>("Dados da empresa encontrados com sucesso!", CompanyMapper.toResponseDTO(company)));
+            company.setLegalName(dto.legalName());
+            company.setTradeName(dto.tradeName());
+            company.setCnpj(dto.cnpj());
 
     }
 
-
 }
+

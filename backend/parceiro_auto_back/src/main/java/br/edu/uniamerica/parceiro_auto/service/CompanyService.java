@@ -1,5 +1,6 @@
 package br.edu.uniamerica.parceiro_auto.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -70,6 +71,11 @@ public class CompanyService {
         }
 
         return companyRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Company> findAll() {
+        return companyRepository.findAll();
     }
 
     /*
