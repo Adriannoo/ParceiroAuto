@@ -3,6 +3,7 @@ package br.edu.uniamerica.parceiro_auto.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.repository.CompanyRepository;
 import br.edu.uniamerica.parceiro_auto.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -181,5 +183,15 @@ public class CompanyService {
         }
 
         return value.trim();
+    }
+
+    // Metodo para deletar uma empresa
+    public void deleteCompany(Long id) {
+        Company company = findById(id)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Empresa nao encontrada")
+                );
+
+        companyRepository.delete(company);
     }
 }

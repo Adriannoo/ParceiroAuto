@@ -31,7 +31,7 @@ public class CompanyController {
     // Queremos devolver 201 CREATED, que e o status correto apra criacao. Por isso usamos ResponseEntity
     // LOCALHOST:8080/api/companies
     @PostMapping
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> criar(@RequestBody CompanyRequestDTO dto) {
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@RequestBody CompanyRequestDTO dto) {
         Company company = companyService.createCompany(dto.cnpj(), dto.legalName(), dto.tradeName());
 
         CompanyResponseDTO responseDTO = new CompanyResponseDTO(
@@ -49,7 +49,7 @@ public class CompanyController {
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id) {
         Company company = companyService.findById(id)
                 .orElseThrow(
                         () -> new ResponseStatusException(
@@ -57,7 +57,23 @@ public class CompanyController {
                         )
                 );
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponse<>("Dados da empresa encontrados com sucesso!", CompanyMapper.toResponseDTO(company)));
+                .body(new ApiResponse<>("Empresa encontrada com sucesso!", CompanyMapper.toResponseDTO(company)));
+    }
+
+    // End point para pegar os dados da empresa pelo cnpj
+    // Queremos devolver 200 OK, status generico para sucesso
+    // GET LOCALHOST:8080/api/companies?cnpj=99999999999999
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@PathVariable String cnpj) {
+        Company company = companyService.findByCnpj(cnpj);
+
+        // Como o "findByCnpj" nao esta usando optional no repository, nao fazemos tratamento de retorno Optional com orElseThrow
+        // Por isso o tratamento precisa ser manual
+        if (company == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada");
+        }
+
+        return ResponseEntity.ok(new ApiResponse<>("Empresa encontrada com sucesso!", CompanyMapper.toResponseDTO(company)));
     }
 
     // End point para listar todas as empesas
@@ -85,10 +101,20 @@ public class CompanyController {
                         )
                 );
 
-            company.setLegalName(dto.legalName());
-            company.setTradeName(dto.tradeName());
-            company.setCnpj(dto.cnpj());
+            Company updated = companyService.updateCompany(company, dto.cnpj(), dto.legalName(), dto.tradeName());
 
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Empresa atualizada com sucesso!", CompanyMapper.toResponseDTO(updated)));
+    }
+
+    // End point para deletar uma empesa
+    // Vamos devolver 204 No Content - sem corpo, status para delete sucesso
+    // DELETE LOCALHOST:8080/api/id
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteCompany(@PathVariable Long id) {
+        // Sem o FindById no controller, ID inexistente vai gerar 500 Internal Server Error por conta do Ille da service, nao 404
+        companyService.deleteCompany(id);
+        return ResponseEntity.status(HttpStatus.OK).body("Empresa deletada com sucesso!");
     }
 
 }
