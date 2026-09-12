@@ -45,7 +45,7 @@ public class BankAccountController {
                 .body(new ApiResponse<>("Conta bancaria criada com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
     }
 
-    //Endpoint para listar todas as contas bancarias de uma empresa
+    // Endpoint para listar todas as contas bancarias de uma empresa
     // Queremos devolver 200 OK, status generico para sucesso
     // GET localhost:8080/api/bank-accounts/company/{companyId}
     @GetMapping("/company/{companyId}")
@@ -63,6 +63,75 @@ public class BankAccountController {
         return ResponseEntity.ok(new ApiResponse<>("Contas listadas com sucesso!", contas));
     }
 
-    
+    // Endpoint para buscar a conta padrao de uma empresa
+    // Queremos devolver 200 OK, status generico para sucesso
+    // GET localhost:8080/api/bank-accounts/company/{companyId}/default
+    @GetMapping("/company/{companyId}/default")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findByDefault(@PathVariable Long companyId) {
+        Company company = companyService.findById(companyId)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma conta padrao encontrada!")
+                );
 
+        BankAccount bankAccount = bankAccountService.findDefaultByCompany(company);
+
+        // Se nao houver conta padrao, lanca excecao 404 NOT FOUND
+        if (bankAccount == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma conta padrao encontrada!");
+        }
+
+        return ResponseEntity.ok(new ApiResponse<>("Conta padrao encontrada com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
+    }
+
+    // Endpoint para definir uma conta bancaria como padrao
+    // Queremos devolver 200 OK, status generico para sucesso
+    // PATCH localhost:8080/api/bank-accounts/{id}/default?companyId
+    @PatchMapping("/{id}/default")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> defineDefault(@PathVariable Long id, @RequestParam Long companyId) {
+        Company company = companyService.findById(companyId)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")
+                );
+
+        BankAccount bankAccount = bankAccountService.findById(id);
+        bankAccountService.defineDefaultAccount(company, bankAccount);
+
+        return ResponseEntity.ok(new ApiResponse<>("Conta nao padrao definica com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
+    }
+
+    // Endpoint para atualizar uma conta bancaria
+    // Queremos devolver 200 OK, status generico para sucesso
+    // PUT localhost:8080/api/bank-accounts/{id}
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(@PathVariable Long id, @RequestBody BankAccountRequestDTO dto) {
+        Company company = companyService.findById(dto.companyId())
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")
+                );
+
+        BankAccount bankAccount = bankAccountService.findById(id);
+
+        BankAccount updated = bankAccountService.updateBankAccount(
+                company, bankAccount, dto.bankName(), dto.branch(), dto.accountNumber(), dto.accountType(), dto.defaultAccount()
+        );
+
+        return ResponseEntity.ok(new ApiResponse<>("Conta atualizada com sucesso!", BankAccountMapper.toResponseDTO(updated)));
+    }
+
+
+    // Endpoint para deletar uma conta bancaria
+    // Queremos devolver 200 OK, status generico para sucesso
+    // DELETE localhost:8080/api/bank-accounts/{id}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam Long companyId) {
+        Company company = companyService.findById(companyId)
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")
+                );
+
+        BankAccount bankAccount = bankAccountService.findById(id);
+        bankAccountService.deleteBankAccount(company, bankAccount);
+
+        return ResponseEntity.noContent().build();
+    }
 }

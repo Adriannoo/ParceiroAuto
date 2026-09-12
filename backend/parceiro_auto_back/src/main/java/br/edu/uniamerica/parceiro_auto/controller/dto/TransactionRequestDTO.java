@@ -1,0 +1,18 @@
+package br.edu.uniamerica.parceiro_auto.controller.dto;
+
+import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;
+import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+public record TransactionRequestDTO(
+        Long companyId,
+        Long bankAccountId,
+        Long transactionCategoryId,
+        TransactionType type,
+        String description,
+        BigDecimal value,
+        TransactionMethod method,
+        LocalDate date
+) {}
