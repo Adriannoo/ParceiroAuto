@@ -63,7 +63,7 @@ public class CompanyController {
     // End point para pegar os dados da empresa pelo cnpj
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies?cnpj=99999999999999
-    @GetMapping("/{id}")
+    @GetMapping
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@PathVariable String cnpj) {
         Company company = companyService.findByCnpj(cnpj);
 
@@ -116,6 +116,5 @@ public class CompanyController {
         companyService.deleteCompany(id);
         return ResponseEntity.status(HttpStatus.OK).body("Empresa deletada com sucesso!");
     }
-
 }
 

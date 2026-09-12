@@ -66,6 +66,19 @@ public class BankAccountService {
         return bankAccountRepository.save(bankAccount);
     }
 
+    // Procura uma conta bancaria por ID
+    @Transactional(readOnly = true)
+    public BankAccount findById(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("O ID nao pode ser nulo!");
+        }
+
+        return bankAccountRepository.findById(id)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Conta bancaria nao encontrada!")
+                );
+    }
+
     // Busca todas as contas bancárias de uma empresa.
     @Transactional(readOnly = true)
     public List<BankAccount> findByCompany(Company company) {

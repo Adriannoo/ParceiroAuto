@@ -93,6 +93,19 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
+    // Procura a transacao pelo ID
+    @Transactional(readOnly = true)
+    public Transaction findById(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("O ID nao pode ser nulo!");
+        }
+
+        return transactionRepository.findById(id)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Transacao nao encontrada!")
+                );
+    }
+
     // Busca todas as transações de uma conta bancária.
     @Transactional(readOnly = true)
     public List<Transaction> findByBankAccount(BankAccount bankAccount) {
