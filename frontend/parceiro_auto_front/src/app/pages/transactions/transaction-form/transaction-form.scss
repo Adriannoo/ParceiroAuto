@@ -1,0 +1,58 @@
+$azul: #2f7de1;
+$verde: #0f6e56;
+$vermelho: #a32d2d;
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #4a4a4a;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: $azul;
+  box-shadow: 0 0 0 0.2rem rgba(47, 125, 225, 0.15);
+}
+
+.type-toggle {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 10px;
+  background-color: #f1f2f4;
+}
+
+.type-button {
+  border: none;
+  background: transparent;
+  padding: 7px 22px;
+  border-radius: 7px;
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    color: #111827;
+  }
+
+  &.active {
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  &.active.income {
+    color: $verde;
+  }
+
+  &.active.expense {
+    color: $vermelho;
+  }
+}

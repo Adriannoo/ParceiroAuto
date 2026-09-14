@@ -25,13 +25,13 @@ export class RegisterComponent {
 
   form: FormGroup;
   formSubmitted = signal(false);
-  carregando = signal(false);
-  erro = signal<string | null>(null);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   constructor() {
     this.form = this.fb.group(
       {
-        nome: ['', [Validators.required, Validators.minLength(3)]],
+        name: ['', [Validators.required, Validators.minLength(3)]],
         email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', [Validators.required]]
@@ -42,8 +42,8 @@ export class RegisterComponent {
     );
   }
 
-  get nomeControl() {
-    return this.form.get('nome');
+  get nameControl() {
+    return this.form.get('name');
   }
 
   get emailControl() {
@@ -70,7 +70,7 @@ export class RegisterComponent {
   }
 
   submit() {
-    this.erro.set(null);
+    this.error.set(null);
     this.formSubmitted.set(true);
 
     if (this.form.invalid) {
@@ -78,30 +78,30 @@ export class RegisterComponent {
       return;
     }
 
-    this.carregando.set(true);
+    this.loading.set(true);
 
-    const { nome, email, password } = this.form.value;
+    const { name, email, password } = this.form.value;
 
-    this.authService.registrar({
-      nome,
+    this.authService.register({
+      name,
       email,
-      senha: password,
-      papel: 'usuario',
-      ativo: true,
+      password: password,
+      role: 'user',
+      active: true,
     }).subscribe({
       next: () => {
-        this.carregando.set(false);
-        // Redireciona para dashboard (já logado)
+        this.loading.set(false);
+        // Redirect to the dashboard after signing in
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        this.carregando.set(false);
-        this.erro.set(err.message);
+        this.loading.set(false);
+        this.error.set(err.message);
       },
     });
   }
 
-  limparErro(): void {
-    this.erro.set(null);
+  clearError(): void {
+    this.error.set(null);
   }
 }

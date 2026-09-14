@@ -1,0 +1,118 @@
+@if (loading()) {
+  <div class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando</span>
+    </div>
+  </div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+  <a routerLink="/companies" class="btn btn-light">Voltar para empresas</a>
+} @else if (company(); as e) {
+
+  <nav class="breadcrumb">
+    <a routerLink="/companies">Empresas</a>
+    <span>/</span>
+    <span>{{ e.tradeName }}</span>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <h2 class="mb-1">{{ e.tradeName }}</h2>
+      <small class="text-muted">{{ e.legalName }} · {{ e.cnpj }}</small>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a [routerLink]="['/companies', e.id, 'edit']" class="btn btn-outline-primary">Editar</a>
+      <a routerLink="/transactions/new" class="btn btn-primary">Novo lançamento</a>
+    </div>
+  </div>
+
+  <div class="details">
+    <div class="detail-item">
+      <span>Regime</span>
+      <strong>{{ taxRegime(e) }}</strong>
+    </div>
+    <div class="detail-item">
+      <span>Porte</span>
+      <strong>{{ size(e) }}</strong>
+    </div>
+    <div class="detail-item">
+      <span>Natureza jurídica</span>
+      <strong>{{ legalNatureLabel(e) }}</strong>
+    </div>
+    <div class="detail-item">
+      <span>Inscrição estadual</span>
+      <strong>{{ e.stateRegistration || '—' }}</strong>
+    </div>
+    <div class="detail-item wide">
+      <span>Endereço</span>
+      <strong>{{ address(e) }} · CEP {{ e.postalCode }}</strong>
+    </div>
+    <div class="detail-item">
+      <span>Telefone</span>
+      <strong>{{ e.phone }}</strong>
+    </div>
+    <div class="detail-item">
+      <span>E-mail</span>
+      <strong>{{ e.email }}</strong>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="summary-item">
+      <span>Entradas</span>
+      <strong class="income">{{ formatCurrency(income()) }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Saídas</span>
+      <strong class="expense">{{ formatCurrency(expenses()) }}</strong>
+    </div>
+    <div class="summary-item">
+      <span>Resultado</span>
+      <strong [class.expense]="balance() < 0">{{ formatCurrency(balance()) }}</strong>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      @if (sorted().length === 0) {
+        <div class="text-center py-5 px-3">
+          <p class="text-muted mb-3">Nenhum lançamento para esta empresa ainda.</p>
+          <a routerLink="/transactions/new" class="btn btn-primary">Lançar o primeiro</a>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Forma</th>
+                <th class="text-end">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of sorted(); track m.id) {
+                <tr>
+                  <td class="text-nowrap">{{ date(m.date) }}</td>
+                  <td>
+                    <span class="description">{{ m.description }}</span>
+                    <small class="account">{{ m.account }}</small>
+                  </td>
+                  <td><span class="tag">{{ m.category }}</span></td>
+                  <td>{{ method(m) }}</td>
+                  <td class="text-end text-nowrap"
+                      [class.income]="m.type === 'ENTRADA'"
+                      [class.expense]="m.type === 'SAIDA'">
+                    {{ m.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(m.value) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+}

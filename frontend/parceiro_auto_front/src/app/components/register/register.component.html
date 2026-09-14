@@ -8,30 +8,30 @@
       Preencha os campos abaixo para criar sua conta.
     </p>
 
-    <div *ngIf="erro(); else semErro" class="aviso-erro">
-      <p>{{ erro() }}</p>
-      <button type="button" class="btn-fechar" (click)="limparErro()">✕</button>
+    <div *ngIf="error(); else noError" class="error-banner">
+      <p>{{ error() }}</p>
+      <button type="button" class="close-button" (click)="clearError()">✕</button>
     </div>
-    <ng-template #semErro></ng-template>
+    <ng-template #noError></ng-template>
 
     <form [formGroup]="form" (ngSubmit)="submit()">
       <div class="field-group">
-        <label for="nome">Nome completo</label>
-        <input id="nome" type="text" placeholder="Seu nome" formControlName="nome" [disabled]="carregando()" />
+        <label for="name">Nome completo</label>
+        <input id="name" type="text" placeholder="Seu nome" formControlName="name" [disabled]="loading()" />
       </div>
 
-      <div class="error-message" *ngIf="formSubmitted() && nomeControl?.invalid && nomeControl?.hasError('required')">
+      <div class="error-message" *ngIf="formSubmitted() && nameControl?.invalid && nameControl?.hasError('required')">
         Informe seu nome.
       </div>
 
-      <div class="error-message" *ngIf="formSubmitted() && nomeControl?.invalid && nomeControl?.hasError('minlength')">
+      <div class="error-message" *ngIf="formSubmitted() && nameControl?.invalid && nameControl?.hasError('minlength')">
         Seu nome deve ter no mínimo 3 caracteres.
       </div>
 
       <div class="field-group">
         <label for="email">E-mail</label>
         <input id="email" type="email" placeholder="nome@empresa.com" formControlName="email"
-          [disabled]="carregando()" />
+          [disabled]="loading()" />
       </div>
 
       <div class="error-message" *ngIf="formSubmitted() && emailControl?.invalid && emailControl?.hasError('required')">
@@ -45,7 +45,7 @@
       <div class="field-group">
         <label for="password">Senha</label>
         <input id="password" type="password" placeholder="Sua senha" formControlName="password"
-          [disabled]="carregando()" />
+          [disabled]="loading()" />
       </div>
 
       <div class="error-message"
@@ -61,7 +61,7 @@
       <div class="field-group">
         <label for="confirmPassword">Confirme sua senha</label>
         <input id="confirmPassword" type="password" placeholder="Confirme sua senha" formControlName="confirmPassword"
-          [disabled]="carregando()" />
+          [disabled]="loading()" />
       </div>
 
       <div class="error-message"
@@ -73,11 +73,11 @@
         As senhas não coincidem.
       </div>
 
-      <button type="submit" class="register-btn" [disabled]="carregando()">
-        {{ carregando() ? 'Cadastrando...' : 'Cadastrar' }}
+      <button type="submit" class="register-btn" [disabled]="loading()">
+        {{ loading() ? 'Cadastrando...' : 'Cadastrar' }}
       </button>
 
-      <button type="button" class="back-btn" routerLink="/login" [disabled]="carregando()">
+      <button type="button" class="back-btn" routerLink="/login" [disabled]="loading()">
         Voltar para o login
       </button>
     </form>

@@ -1,0 +1,136 @@
+﻿<h2 class="mb-4">{{ editing ? 'Editar movimentação' : 'Nova movimentação' }}</h2>
+
+<div class="card">
+  <div class="card-body p-4">
+    @if (error()) {
+      <div class="alert alert-danger">{{ error() }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <div class="type-toggle mb-4">
+        @for (t of transactionTypes; track t.value) {
+          <button
+            type="button"
+            class="type-button"
+            [class.active]="form.value.type === t.value"
+            [class.income]="t.value === 'ENTRADA'"
+            [class.expense]="t.value === 'SAIDA'"
+            (click)="form.controls.type.setValue(t.value)">
+            {{ t.label }}
+          </button>
+        }
+      </div>
+
+      <div class="row">
+        <div class="col-md-7 mb-3">
+          <label class="form-label" for="description">Descrição</label>
+          <input id="description" type="text" class="form-control"
+            [class.is-invalid]="isInvalid('description')" formControlName="description" />
+
+          @if (isInvalid('description')) {
+            <div class="invalid-feedback d-block">
+              @if (hasError('description', 'required')) {
+                Informe a descrição.
+              } @else {
+                A descrição precisa de pelo menos 3 caracteres.
+              }
+            </div>
+          }
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="value">Valor (R$)</label>
+          <input id="value" type="number" step="0.01" min="0" class="form-control"
+            [class.is-invalid]="isInvalid('value')" formControlName="value" />
+
+          @if (isInvalid('value')) {
+            <div class="invalid-feedback d-block">
+              @if (hasError('value', 'required')) {
+                Informe o valor.
+              } @else {
+                O valor precisa ser maior que zero.
+              }
+            </div>
+          }
+        </div>
+
+        <div class="col-md-2 mb-3">
+          <label class="form-label" for="date">Data</label>
+          <input id="date" type="date" class="form-control"
+            [class.is-invalid]="isInvalid('date')" formControlName="date" />
+
+          @if (isInvalid('date')) {
+            <div class="invalid-feedback d-block">Informe a data.</div>
+          }
+        </div>
+
+        <div class="col-md-5 mb-3">
+          <label class="form-label" for="companyId">Empresa</label>
+          <select id="companyId" class="form-select"
+            [class.is-invalid]="isInvalid('companyId')" formControlName="companyId">
+            <option [ngValue]="null">Selecione</option>
+            @for (company of companies(); track company.id) {
+              <option [ngValue]="company.id">{{ company.tradeName }}</option>
+            }
+          </select>
+
+          @if (isInvalid('companyId')) {
+            <div class="invalid-feedback d-block">Selecione a empresa.</div>
+          }
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="category">Categoria</label>
+          <select id="category" class="form-select"
+            [class.is-invalid]="isInvalid('category')" formControlName="category">
+            <option value="">Selecione</option>
+            @for (category of categories; track category) {
+              <option [value]="category">{{ category }}</option>
+            }
+          </select>
+
+          @if (isInvalid('category')) {
+            <div class="invalid-feedback d-block">Selecione a categoria.</div>
+          }
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="account">Conta</label>
+          <select id="account" class="form-select"
+            [class.is-invalid]="isInvalid('account')" formControlName="account">
+            <option value="">Selecione</option>
+            @for (account of accounts; track account) {
+              <option [value]="account">{{ account }}</option>
+            }
+          </select>
+
+          @if (isInvalid('account')) {
+            <div class="invalid-feedback d-block">Selecione a conta.</div>
+          }
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="method">Forma de pagamento</label>
+          <select id="method" class="form-select" formControlName="method">
+            @for (f of paymentMethods; track f.value) {
+              <option [value]="f.value">{{ f.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <a routerLink="/transactions" class="btn btn-light">Cancelar</a>
+        <button type="button" class="btn btn-outline-secondary" (click)="reset()">Limpar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+          }
+          {{ editing ? 'Salvar alterações' : 'Lançar movimentação' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

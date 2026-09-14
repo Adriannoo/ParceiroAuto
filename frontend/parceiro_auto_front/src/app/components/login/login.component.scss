@@ -1,4 +1,4 @@
-.aviso-erro {
+.error-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -14,7 +14,7 @@
     font-size: 0.95rem;
   }
 
-  .btn-fechar {
+  .close-button {
     background: none;
     border: none;
     color: #c33;
@@ -29,7 +29,7 @@
   }
 }
 
-.formulario {
+.form {
   display: contents;
 }
 

@@ -1,19 +1,16 @@
-import { provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { AccessManagement } from './access-management';
 
-import { Dashboard } from './dashboard';
-
-describe('Dashboard', () => {
-  let component: Dashboard;
-  let fixture: ComponentFixture<Dashboard>;
+describe('AccessManagement', () => {
+  let component: AccessManagement;
+  let fixture: ComponentFixture<AccessManagement>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideRouter([])],
-      imports: [Dashboard],
+      imports: [AccessManagement],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(Dashboard);
+    fixture = TestBed.createComponent(AccessManagement);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

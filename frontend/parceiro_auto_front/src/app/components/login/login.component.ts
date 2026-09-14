@@ -15,36 +15,36 @@ export class LoginComponent {
   private router = inject(Router);
 
   email = signal('');
-  senha = signal('');
-  carregando = signal(false);
-  erro = signal<string | null>(null);
+  password = signal('');
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   login(): void {
-    this.erro.set(null);
-    this.carregando.set(true);
+    this.error.set(null);
+    this.loading.set(true);
 
     const emailValue = this.email().trim();
-    const senhaValue = this.senha().trim();
+    const passwordValue = this.password().trim();
 
-    if (!emailValue || !senhaValue) {
-      this.erro.set('Email e senha são obrigatórios');
-      this.carregando.set(false);
+    if (!emailValue || !passwordValue) {
+      this.error.set('Email e senha são obrigatórios');
+      this.loading.set(false);
       return;
     }
 
-    this.authService.login(emailValue, senhaValue).subscribe({
+    this.authService.login(emailValue, passwordValue).subscribe({
       next: () => {
-        this.carregando.set(false);
+        this.loading.set(false);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        this.carregando.set(false);
-        this.erro.set(err.message);
+        this.loading.set(false);
+        this.error.set(err.message);
       },
     });
   }
 
-  limparErro(): void {
-    this.erro.set(null);
+  clearError(): void {
+    this.error.set(null);
   }
 }

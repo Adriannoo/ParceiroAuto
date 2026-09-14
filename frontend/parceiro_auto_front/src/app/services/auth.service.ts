@@ -1,125 +1,125 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { Usuario } from '../models/usuario.model';
+import { User } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly CHAVE_USUARIOS = 'parceiro-auto:usuarios:v1';
-  private readonly CHAVE_LOGADO = 'parceiro-auto:logado:v1';
-  private readonly LATENCIA = 300;
+  private readonly USERS_KEY = 'parceiro-auto:users:v1';
+  private readonly SESSION_KEY = 'parceiro-auto:logado:v1';
+  private readonly LATENCY = 300;
 
-  private readonly USUARIOS_SEMENTE: Usuario[] = [
+  private readonly SEED_USERS: User[] = [
     {
       id: 1,
-      nome: 'Gustavo Mendes',
+      name: 'Gustavo Mendes',
       email: 'gustavo@empresa.com',
-      senha: '123456',
-      papel: 'admin',
-      empresasId: [1, 2],
-      ativo: true,
+      password: '123456',
+      role: 'admin',
+      companyIds: [1, 2],
+      active: true,
     },
     {
       id: 2,
-      nome: 'Maria Silva',
+      name: 'Maria Silva',
       email: 'maria@empresa.com',
-      senha: '123456',
-      papel: 'usuario',
-      empresasId: [1],
-      ativo: true,
+      password: '123456',
+      role: 'user',
+      companyIds: [1],
+      active: true,
     },
     {
       id: 3,
-      nome: 'João Santos',
+      name: 'João Santos',
       email: 'joao@empresa.com',
-      senha: '123456',
-      papel: 'usuario',
-      empresasId: [2, 3],
-      ativo: true,
+      password: '123456',
+      role: 'user',
+      companyIds: [2, 3],
+      active: true,
     },
   ];
 
   constructor() {
-    if (localStorage.getItem(this.CHAVE_USUARIOS) === null) {
-      this.gravarUsuarios(this.USUARIOS_SEMENTE);
+    if (localStorage.getItem(this.USERS_KEY) === null) {
+      this.writeUsers(this.SEED_USERS);
     }
   }
 
-  private lerUsuarios(): Usuario[] {
+  private readUsers(): User[] {
     try {
-      const bruto = localStorage.getItem(this.CHAVE_USUARIOS);
-      return bruto ? (JSON.parse(bruto) as Usuario[]) : [];
+      const raw = localStorage.getItem(this.USERS_KEY);
+      return raw ? (JSON.parse(raw) as User[]) : [];
     } catch {
-      this.gravarUsuarios(this.USUARIOS_SEMENTE);
-      return [...this.USUARIOS_SEMENTE];
+      this.writeUsers(this.SEED_USERS);
+      return [...this.SEED_USERS];
     }
   }
 
-  private gravarUsuarios(usuarios: Usuario[]): void {
-    localStorage.setItem(this.CHAVE_USUARIOS, JSON.stringify(usuarios));
+  private writeUsers(users: User[]): void {
+    localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
   }
 
-  private lerLogado(): Usuario | null {
+  private readSession(): User | null {
     try {
-      const bruto = localStorage.getItem(this.CHAVE_LOGADO);
-      return bruto ? (JSON.parse(bruto) as Usuario) : null;
+      const raw = localStorage.getItem(this.SESSION_KEY);
+      return raw ? (JSON.parse(raw) as User) : null;
     } catch {
       return null;
     }
   }
 
-  private gravarLogado(usuario: Usuario | null): void {
-    if (usuario === null) {
-      localStorage.removeItem(this.CHAVE_LOGADO);
+  private writeSession(user: User | null): void {
+    if (user === null) {
+      localStorage.removeItem(this.SESSION_KEY);
     } else {
-      localStorage.setItem(this.CHAVE_LOGADO, JSON.stringify(usuario));
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(user));
     }
   }
 
-  login(email: string, senha: string): Observable<Usuario> {
-    const usuario = this.lerUsuarios().find(
-      (u) => u.email === email && u.senha === senha && u.ativo
+  login(email: string, password: string): Observable<User> {
+    const user = this.readUsers().find(
+      (u) => u.email === email && u.password === password && u.active
     );
 
-    if (!usuario) {
+    if (!user) {
       return throwError(() => new Error('Email ou senha inválidos'));
     }
 
-    this.gravarLogado(usuario);
+    this.writeSession(user);
 
-    return of(usuario).pipe(delay(this.LATENCIA));
+    return of(user).pipe(delay(this.LATENCY));
   }
 
   logout(): void {
-    this.gravarLogado(null);
+    this.writeSession(null);
   }
 
-  estaAutenticado(): boolean {
-    return this.lerLogado() !== null;
+  isAuthenticated(): boolean {
+    return this.readSession() !== null;
   }
 
-  getUsuarioLogado(): Usuario | null {
-    return this.lerLogado();
+  getCurrentUser(): User | null {
+    return this.readSession();
   }
 
-  registrar(dados: Omit<Usuario, 'id' | 'empresasId'>): Observable<Usuario> {
-    const usuarios = this.lerUsuarios();
+  register(data: Omit<User, 'id' | 'companyIds'>): Observable<User> {
+    const users = this.readUsers();
     
-    // Validar se email já existe
-    if (usuarios.some((u) => u.email === dados.email)) {
+    // Check whether the email is already registered
+    if (users.some((u) => u.email === data.email)) {
       return throwError(() => new Error('Email já cadastrado'));
     }
 
-    const novoUsuario: Usuario = {
-      ...dados,
-      id: usuarios.length > 0 ? Math.max(...usuarios.map((u) => u.id)) + 1 : 1,
-      empresasId: [],
+    const newUser: User = {
+      ...data,
+      id: users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1,
+      companyIds: [],
     };
 
-    usuarios.push(novoUsuario);
-    this.gravarUsuarios(usuarios);
-    this.gravarLogado(novoUsuario);
+    users.push(newUser);
+    this.writeUsers(users);
+    this.writeSession(newUser);
 
-    return of(novoUsuario).pipe(delay(this.LATENCIA));
+    return of(newUser).pipe(delay(this.LATENCY));
   }
 }

@@ -12,14 +12,14 @@ export class Layout {
   private authService = inject(AuthService);
   private router = inject(Router);
 
-  usuario = computed(() => this.authService.getUsuarioLogado());
+  user = computed(() => this.authService.getCurrentUser());
 
-  initialsUsuario = computed(() => {
-    const u = this.usuario();
+  userInitials = computed(() => {
+    const u = this.user();
     if (!u) return '';
-    const partes = u.nome.split(' ');
-    const firstLetter = partes[0]?.[0] ?? '';
-    const secondLetter = partes[1]?.[0] ?? '';
+    const parts = u.name.split(' ');
+    const firstLetter = parts[0]?.[0] ?? '';
+    const secondLetter = parts[1]?.[0] ?? '';
     return (firstLetter + secondLetter).toUpperCase();
   });
 
