@@ -33,6 +33,40 @@ CREATE TABLE IF NOT EXISTS bank_account (
     branch varchar(4) NOT NULL,
     account_number varchar(13) NOT NULL,
     account_type varchar(20) NOT NULL,
-    
+    balance DECIMAL(19, 2) NOT NULL,
+    default_account BOOLEAN NOT NULL,
+    fk_id_company INTEGER NOT NULL REFERENCES company(id)
+);
 
-)
+-- TRANSACTION CATEGORY
+CREATE TABLE IF NOT EXISTS transaction_category (
+    id serial PRIMARY KEY,
+    name varchar(50) NOT NULL,
+    fk_id_company INTEGER NOT NULL REFERENCES company(id),
+    type varchar(50) NOT NULL,
+    active BOOLEAN NOT NULL
+    UNIQUE(name, fk_id_company)
+);
+
+-- TRANSACTION
+CREATE TABLE IF NOT EXISTS transaction (
+    id serial PRIMARY KEY,
+    fk_id_company INTEGER NOT NULL REFERENCES company(id),
+    fk_id_bank_account INTEGER NOT NULL REFERENCES bank_account(id),
+    fk_id_transaction_category INTEGER NOT NULL REFERENCES transaction_category(id),
+    type varchar(50) NOT NULL,
+    description varchar(255),
+    value DECIMAL(19, 2) NOT NULL,
+    date date NOT NULL,
+    method varchar(50) NOT NULL
+);
+
+-- RECURRENCE RULE
+CREATE TABLE IF NOT EXISTS recurrence_rule (
+    id serial PRIMARY KEY,
+    fk_id_transaction INTEGER NOT NULL UNIQUE REFERENCES transaction(id),
+    method varchar(50) NOT NULL,
+    start_date date NOT NULL,
+    end_date date,
+    last_execution date NOT NULL
+);
