@@ -10,7 +10,7 @@ export type LegalNature = 'EI' | 'SLU' | 'LTDA' | 'SA' | 'SS';
 
 export interface Company {
   id: number;
-  userIds: number[];  // Users with access to this company
+  userIds?: number[];  // Users with access to this company
 
   legalName: string;
   tradeName: string;

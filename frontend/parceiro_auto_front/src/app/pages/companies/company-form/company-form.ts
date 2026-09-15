@@ -121,11 +121,6 @@ export class CompanyForm implements OnInit {
     const data = this.form.getRawValue();
     const id = this.companyId();
 
-    if (this.companyService.isCnpjRegistered(data.cnpj!, id ?? undefined)) {
-      this.error.set('Já existe uma empresa cadastrada com este CNPJ.');
-      return;
-    }
-
     this.saving.set(true);
 
     const request = id

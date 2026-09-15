@@ -9,7 +9,21 @@ public final class CompanyMapper {
                 company.getId(),
                 company.getCnpj(),
                 company.getLegalName(),
-                company.getTradeName()
+                company.getTradeName(),
+                company.getStateRegistration(),
+                company.getLegalNature(),
+                company.getTaxRegime(),
+                company.getSize(),
+                company.getPostalCode(),
+                company.getStreet(),
+                company.getStreetNumber(),
+                company.getAddressComplement(),
+                company.getNeighborhood(),
+                company.getCity(),
+                company.getState(),
+                company.getPhone(),
+                company.getEmail(),
+                company.isActive()
         );
     }
 }

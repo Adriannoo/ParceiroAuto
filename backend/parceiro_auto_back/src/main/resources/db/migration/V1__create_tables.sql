@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS transaction_category (
     name varchar(50) NOT NULL,
     fk_id_company INTEGER NOT NULL REFERENCES company(id),
     type varchar(50) NOT NULL,
-    active BOOLEAN NOT NULL
+    active BOOLEAN NOT NULL,
     UNIQUE(name, fk_id_company)
 );
 

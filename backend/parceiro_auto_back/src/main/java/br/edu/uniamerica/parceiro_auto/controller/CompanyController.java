@@ -32,17 +32,10 @@ public class CompanyController {
     // LOCALHOST:8080/api/companies
     @PostMapping
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@RequestBody CompanyRequestDTO dto) {
-        Company company = companyService.createCompany(dto.cnpj(), dto.legalName(), dto.tradeName());
-
-        CompanyResponseDTO responseDTO = new CompanyResponseDTO(
-                company.getId(),
-                company.getCnpj(),
-                company.getLegalName(),
-                company.getTradeName()
-        );
+        Company company = companyService.createCompany(dto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>("Empresa criada com sucesso!", responseDTO));
+                .body(new ApiResponse<>("Empresa criada com sucesso!", CompanyMapper.toResponseDTO(company)));
     }
 
     // End point para pegar os dados da empresa pelo id
@@ -63,8 +56,8 @@ public class CompanyController {
     // End point para pegar os dados da empresa pelo cnpj
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies?cnpj=99999999999999
-    @GetMapping
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@PathVariable String cnpj) {
+    @GetMapping(params = "cnpj")
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@RequestParam("cnpj") String cnpj) {
         Company company = companyService.findByCnpj(cnpj);
 
         // Como o "findByCnpj" nao esta usando optional no repository, nao fazemos tratamento de retorno Optional com orElseThrow
@@ -79,7 +72,7 @@ public class CompanyController {
     // End point para listar todas as empesas
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies
-    @GetMapping
+    @GetMapping(params = "!cnpj")
     public ResponseEntity<ApiResponse<List<CompanyResponseDTO>>> findAll() {
         List<CompanyResponseDTO> companies = companyService.findAll().stream()
                 .map(CompanyMapper::toResponseDTO)
@@ -101,7 +94,7 @@ public class CompanyController {
                         )
                 );
 
-            Company updated = companyService.updateCompany(company, dto.cnpj(), dto.legalName(), dto.tradeName());
+            Company updated = companyService.updateCompany(company, dto);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>("Empresa atualizada com sucesso!", CompanyMapper.toResponseDTO(updated)));
