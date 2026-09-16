@@ -1,6 +1,7 @@
 package br.edu.uniamerica.parceiro_auto.controller;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.ApiResponse;
+import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyLookupResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyRequestDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.CompanyMapper;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("api/companies")
@@ -39,10 +39,18 @@ public class CompanyController {
                 .body(new ApiResponse<>("Empresa criada com sucesso!", CompanyMapper.toResponseDTO(company)));
     }
 
+    @GetMapping("/lookup/{cnpj}")
+    public ResponseEntity<ApiResponse<CompanyLookupResponseDTO>> lookupByCnpj(@PathVariable String cnpj) {
+        CompanyLookupResponseDTO company = companyService.lookupByCnpj(cnpj);
+
+        return ResponseEntity.ok(
+                new ApiResponse<>("Dados da empresa encontrados com sucesso!", company)
+        );
+    }
     // End point para pegar os dados da empresa pelo id
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies/{id}
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id) {
         Company company = companyService.findById(id)
                 .orElseThrow(
@@ -50,6 +58,7 @@ public class CompanyController {
                                 HttpStatus.NOT_FOUND, "Empresa nao encontrada"
                         )
                 );
+
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>("Empresa encontrada com sucesso!", CompanyMapper.toResponseDTO(company)));
     }
@@ -87,7 +96,7 @@ public class CompanyController {
     // Queremos devolver 200 OK, status generico para sucesso
     // PUT LOCALHOST:8080/api/id
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@Valid @PathVariable Long id, @RequestBody CompanyRequestDTO dto) {
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequestDTO dto) {
         Company company = companyService.findById(id)
                 .orElseThrow(
                         () -> new ResponseStatusException(
@@ -110,5 +119,6 @@ public class CompanyController {
         companyService.deleteCompany(id);
         return ResponseEntity.status(HttpStatus.OK).body("Empresa deletada com sucesso!");
     }
+
 }
 

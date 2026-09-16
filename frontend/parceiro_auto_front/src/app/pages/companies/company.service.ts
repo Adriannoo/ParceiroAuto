@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiResponse } from '../../models/api-response.model';
-import { Company } from './company.model';
+import {Company, CompanyLookup} from './company.model';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyService {
@@ -36,6 +36,14 @@ export class CompanyService {
   delete(id: number): Observable<void> {
     return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(
       map(() => void 0)
+    );
+  }
+
+  findByCnpjInBrasilApi(cnpj: string): Observable<CompanyLookup> {
+    const cleanedCnpj = cnpj.replace(/\D/g, '');
+
+    return this.http.get<ApiResponse<CompanyLookup>>(`${this.apiUrl}/lookup/${cleanedCnpj}`).pipe(
+      map(response => response.dados)
     );
   }
 }

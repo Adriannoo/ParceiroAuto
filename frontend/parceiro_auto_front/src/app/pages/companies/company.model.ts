@@ -35,6 +35,20 @@ export interface Company {
   active: boolean;
 }
 
+export interface CompanyLookup {
+  legalName: string;
+  tradeName: string;
+  cnpj: string;
+  postalCode?: string;
+  street?: string;
+  streetNumber?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  phone?: string;
+  email?: string;
+}
+
 interface Option<T> {
   value: T;
   label: string;

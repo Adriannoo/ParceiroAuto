@@ -145,4 +145,38 @@ export class CompanyForm implements OnInit {
     });
     this.error.set(null);
   }
+
+  searchByCnpj(): void {
+    this.error.set(null);
+
+    const cnpjControl = this.form.controls.cnpj;
+    cnpjControl.markAsTouched();
+
+    if (cnpjControl.invalid) {
+      this.error.set('Informe um CNPJ válido antes de buscar.');
+      return;
+    }
+
+    const cnpj = cnpjControl.value ?? '';
+
+    this.companyService.findByCnpjInBrasilApi(cnpj).subscribe({
+      next: (companyData) => {
+        this.form.patchValue({
+          legalName: companyData.legalName,
+          tradeName: companyData.tradeName,
+          postalCode: companyData.postalCode,
+          street: companyData.street,
+          streetNumber: companyData.streetNumber,
+          neighborhood: companyData.neighborhood,
+          city: companyData.city,
+          state: companyData.state,
+          phone: companyData.phone,
+          email: companyData.email,
+        });
+      },
+      error: () => {
+        this.error.set('Não foi possível buscar os dados desse CNPJ.')
+      },
+    });
+  }
 }

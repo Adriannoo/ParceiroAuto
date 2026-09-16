@@ -3,6 +3,7 @@ package br.edu.uniamerica.parceiro_auto.service;
 import java.util.List;
 import java.util.Optional;
 
+import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyLookupResponseDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.repository.CompanyRepository;
 import br.edu.uniamerica.parceiro_auto.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.client.RestClient;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+    private final RestClient restClient = RestClient.create();
 
     public Company createCompany(CompanyRequestDTO dto) {
         String normalizedCnpj = validateCnpj(dto.cnpj());
@@ -157,5 +160,49 @@ public class CompanyService {
         }
 
         return value;
+    }
+
+    @Transactional(readOnly = true)
+    public CompanyLookupResponseDTO lookupByCnpj(String cnpj) {
+        String normalizedCnpj = validateCnpj(cnpj);
+
+        BrasilApiCnpjResponse response = restClient
+                .get()
+                .uri("https://brasilapi.com.br/api/cnpj/v1/{cnpj}", normalizedCnpj)
+                .retrieve()
+                .body(BrasilApiCnpjResponse.class);
+
+        if (response == null) {
+            throw new IllegalArgumentException("Empresa nao encontrada na BrasilAPI");
+        }
+
+        return new CompanyLookupResponseDTO(
+                response.cnpj(),
+                response.razao_social(),
+                response.nome_fantasia(),
+                response.cep(),
+                response.logradouro(),
+                response.numero(),
+                response.bairro(),
+                response.municipio(),
+                response.uf(),
+                response.ddd_telefone_1(),
+                response.email()
+        );
+    }
+
+    private record BrasilApiCnpjResponse(
+            String cnpj,
+            String razao_social,
+            String nome_fantasia,
+            String cep,
+            String logradouro,
+            String numero,
+            String bairro,
+            String municipio,
+            String uf,
+            String ddd_telefone_1,
+            String email
+    ) {
     }
 }
