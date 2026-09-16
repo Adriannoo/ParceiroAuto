@@ -8,6 +8,7 @@ import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,7 @@ public class BankAccountController {
     // Queremos devolver 201 CREATED, que e o status para criacao.
     // POST localhost:8080/api/bank-accounts
     @PostMapping
-    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> create(@RequestBody BankAccountRequestDTO dto){
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> create(@Valid @RequestBody BankAccountRequestDTO dto){
         Company company = companyService.findById(dto.companyId())
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada")
@@ -103,7 +104,7 @@ public class BankAccountController {
     // Queremos devolver 200 OK, status generico para sucesso
     // PUT localhost:8080/api/bank-accounts/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(@PathVariable Long id, @RequestBody BankAccountRequestDTO dto) {
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(@Valid @PathVariable Long id, @RequestBody BankAccountRequestDTO dto) {
         Company company = companyService.findById(dto.companyId())
                 .orElseThrow(
                         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")

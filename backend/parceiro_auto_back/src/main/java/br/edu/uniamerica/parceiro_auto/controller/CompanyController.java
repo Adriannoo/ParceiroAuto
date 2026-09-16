@@ -7,6 +7,7 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.CompanyMapper;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,7 @@ public class CompanyController {
     // Queremos devolver 201 CREATED, que e o status correto apra criacao. Por isso usamos ResponseEntity
     // LOCALHOST:8080/api/companies
     @PostMapping
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@RequestBody CompanyRequestDTO dto) {
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@Valid @RequestBody CompanyRequestDTO dto) {
         Company company = companyService.createCompany(dto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -86,7 +87,7 @@ public class CompanyController {
     // Queremos devolver 200 OK, status generico para sucesso
     // PUT LOCALHOST:8080/api/id
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @RequestBody CompanyRequestDTO dto) {
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@Valid @PathVariable Long id, @RequestBody CompanyRequestDTO dto) {
         Company company = companyService.findById(id)
                 .orElseThrow(
                         () -> new ResponseStatusException(
