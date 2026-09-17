@@ -3,6 +3,7 @@ package br.edu.uniamerica.parceiro_auto.service;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import br.edu.uniamerica.parceiro_auto.repository.CompanyRepository;
 import br.edu.uniamerica.parceiro_auto.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -20,18 +22,23 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
 
     public Company createCompany(CompanyRequestDTO dto) {
+
+        log.info("Criando empresa com CNPJ {}", dto.cnpj());
         String normalizedCnpj = validateCnpj(dto.cnpj());
 
         Company existingCompany = companyRepository.findByCnpj(normalizedCnpj);
 
         if (existingCompany != null) {
+            log.warn("CNPJ duplicado {}", normalizedCnpj);
             throw new IllegalArgumentException("Ja existe uma empresa com esse CNPJ");
         }
 
         Company company = new Company();
         applyCompanyData(company, dto, normalizedCnpj);
 
-        return companyRepository.save(company);
+        Company saved = companyRepository.save(company);
+        log.info("Empresa com CNPJ {} cadastrada (id={})", normalizedCnpj, saved.getId());
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -63,25 +70,31 @@ public class CompanyService {
         if (company == null) {
             throw new IllegalArgumentException("A empresa nao pode ser nula");
         }
-
+        log.info("Atualizando empresa CNPJ:{} id:{}", dto.cnpj(), company.getId());
         String normalizedCnpj = validateCnpj(dto.cnpj());
 
         Company existingCompany = companyRepository.findByCnpj(normalizedCnpj);
 
         if (existingCompany != null && !existingCompany.getId().equals(company.getId())) {
+            log.warn("CNPJ {} com id: {} já pertence a outra empresa", normalizedCnpj, company.getId());
             throw new IllegalArgumentException("Ja existe uma empresa com esse CNPJ");
         }
 
         applyCompanyData(company, dto, normalizedCnpj);
-
-        return companyRepository.save(company);
+        Company saved = companyRepository.save(company);
+        log.info("Empresa id = {} atualizada com sucesso", saved.getId());
+        return saved;
     }
 
     public void deleteCompany(Long id) {
         Company company = findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Empresa nao encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Empresa com id({}) não encontrada para exclusão", id);
+                    return new IllegalArgumentException("Empresa não encontrada");
+                });
 
         companyRepository.delete(company);
+        log.info("Empresa com CNPJ: {} id: {} deletada com sucesso!", company.getCnpj(), id);
     }
 
     private void applyCompanyData(
