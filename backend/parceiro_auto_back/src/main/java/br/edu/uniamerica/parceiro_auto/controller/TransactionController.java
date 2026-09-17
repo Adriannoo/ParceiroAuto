@@ -12,6 +12,10 @@ import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionCategoryService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Tag(name = "Movimentações")
 @RestController
 @RequestMapping("api/transactions")
 public class TransactionController {
@@ -40,7 +45,9 @@ public class TransactionController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TransactionResponseDTO>> create(@RequestBody TransactionRequestDTO dto) {
+    @Operation(summary = "Criar movimentação")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
+    public ResponseEntity<ApiResponse<TransactionResponseDTO>> create(@Validated(TransactionRequestDTO.Create.class) @RequestBody TransactionRequestDTO dto) {
         Company company = companyService.findById(dto.companyId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
         BankAccount bankAccount = bankAccountService.findById(dto.bankAccountId());
@@ -55,6 +62,7 @@ public class TransactionController {
     }
 
     @GetMapping("/bank-account/{bankAccountId}")
+    @Operation(summary = "Listar movimentações de uma conta")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByBankAccount(@PathVariable Long bankAccountId) {
         BankAccount bankAccount = bankAccountService.findById(bankAccountId);
 
@@ -66,6 +74,7 @@ public class TransactionController {
     }
 
     @GetMapping("/company/{companyId}")
+    @Operation(summary = "Listar movimentações de uma empresa")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByCompany(@PathVariable Long companyId) {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
@@ -78,6 +87,7 @@ public class TransactionController {
     }
 
     @GetMapping("/company/{companyId}/last")
+    @Operation(summary = "Listar movimentações da empresa com limite")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findLastByCompany(@PathVariable Long companyId, @RequestParam int limit) {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
@@ -90,7 +100,8 @@ public class TransactionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<TransactionResponseDTO>> update(@PathVariable Long id, @RequestBody TransactionRequestDTO dto) {
+    @Operation(summary = "Atualizar movimentação")
+    public ResponseEntity<ApiResponse<TransactionResponseDTO>> update(@PathVariable Long id, @Valid @RequestBody TransactionRequestDTO dto) {
         Transaction transaction = transactionService.findById(id);
         BankAccount bankAccount = bankAccountService.findById(dto.bankAccountId());
         TransactionCategory category = transactionCategoryService.findById(dto.transactionCategoryId());
@@ -103,6 +114,8 @@ public class TransactionController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir movimentação")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Excluído com sucesso, sem corpo de resposta", content = @io.swagger.v3.oas.annotations.media.Content)
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         Transaction transaction = transactionService.findById(id);
         transactionService.deleteTransaction(transaction);

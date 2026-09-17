@@ -8,6 +8,8 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Optional;
 
+@Tag(name = "Empresas") // Agrupa operacoes por assunto deles
 @RestController
 @RequestMapping("api/companies")
 public class CompanyController {
@@ -32,6 +35,8 @@ public class CompanyController {
     // Queremos devolver 201 CREATED, que e o status correto apra criacao. Por isso usamos ResponseEntity
     // LOCALHOST:8080/api/companies
     @PostMapping
+    @Operation(summary = "Cadastrar empresa") // Define o resumo do endpoint, e o resumo do que faz. No caso Post de cadastrar empresa
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@Valid @RequestBody CompanyRequestDTO dto) {
         Company company = companyService.createCompany(dto);
 
@@ -43,6 +48,7 @@ public class CompanyController {
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies/{id}
     @GetMapping("/{id}")
+    @Operation(summary = "Buscar empresa por ID")
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id) {
         Company company = companyService.findById(id)
                 .orElseThrow(
@@ -58,6 +64,7 @@ public class CompanyController {
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies?cnpj=99999999999999
     @GetMapping(params = "cnpj")
+    @Operation(summary = "Buscar empresa por CNPJ")
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@RequestParam("cnpj") String cnpj) {
         Company company = companyService.findByCnpj(cnpj);
 
@@ -74,6 +81,7 @@ public class CompanyController {
     // Queremos devolver 200 OK, status generico para sucesso
     // GET LOCALHOST:8080/api/companies
     @GetMapping(params = "!cnpj")
+    @Operation(summary = "Listar empresas")
     public ResponseEntity<ApiResponse<List<CompanyResponseDTO>>> findAll() {
         List<CompanyResponseDTO> companies = companyService.findAll().stream()
                 .map(CompanyMapper::toResponseDTO)
@@ -86,8 +94,13 @@ public class CompanyController {
     // End point para atualizar uma empesa
     // Queremos devolver 200 OK, status generico para sucesso
     // PUT LOCALHOST:8080/api/id
+    /*
+     * @Valid = Mandda verificar as restrições desse DTO antes de executar o corpo, na DTO tem uma implementacao de grupo de movimentacoes com extends.
+     */
+
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@Valid @PathVariable Long id, @RequestBody CompanyRequestDTO dto) {
+    @Operation(summary = "Atualizar empresa")
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequestDTO dto) {
         Company company = companyService.findById(id)
                 .orElseThrow(
                         () -> new ResponseStatusException(
@@ -105,6 +118,7 @@ public class CompanyController {
     // Vamos devolver 204 No Content - sem corpo, status para delete sucesso
     // DELETE LOCALHOST:8080/api/id
     @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir empresa")
     public ResponseEntity<String> deleteCompany(@PathVariable Long id) {
         // Sem o FindById no controller, ID inexistente vai gerar 500 Internal Server Error por conta do Ille da service, nao 404
         companyService.deleteCompany(id);
