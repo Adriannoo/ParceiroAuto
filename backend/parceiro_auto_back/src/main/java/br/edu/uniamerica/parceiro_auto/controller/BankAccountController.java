@@ -21,25 +21,26 @@ import java.util.List;
 public class BankAccountController {
     private final BankAccountService bankAccountService;
     private final CompanyService companyService;
-
-    // Construtor
     public BankAccountController(BankAccountService bankAccountService, CompanyService companyService) {
         this.bankAccountService = bankAccountService;
         this.companyService = companyService;
     }
-
-    // Endpoint para criar uma nova conta bancaria
-    // Queremos devolver 201 CREATED, que e o status para criacao.
-    // POST localhost:8080/api/bank-accounts
-    @PostMapping
-    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> create(@Valid @RequestBody BankAccountRequestDTO dto){
-        Company company = companyService.findById(dto.companyId())
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada")
-                );
+    // Endpoint para criar uma nova conta bancaria para uma empresa
+    // POST localhost:8080/api/bank-accounts/company/{companyId}
+    @PostMapping("/company/{companyId}")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> create(
+            @PathVariable Long companyId,
+            @Valid @RequestBody BankAccountRequestDTO dto
+    ) {
+        Company company = findCompanyOrThrow(companyId);
 
         BankAccount bankAccount = bankAccountService.createBankAccount(
-                company, dto.bankName(), dto.branch(), dto.accountNumber(), dto.accountType(), dto.defaultAccount()
+                company,
+                dto.bankName(),
+                dto.branch(),
+                dto.accountNumber(),
+                dto.accountType(),
+                dto.defaultAccount()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -47,36 +48,26 @@ public class BankAccountController {
     }
 
     // Endpoint para listar todas as contas bancarias de uma empresa
-    // Queremos devolver 200 OK, status generico para sucesso
     // GET localhost:8080/api/bank-accounts/company/{companyId}
     @GetMapping("/company/{companyId}")
-    public ResponseEntity<ApiResponse<List<BankAccountResponseDTO>>> findByCompany(@PathVariable Long companyId){
-        Company company = companyService.findById(companyId)
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada")
-                );
+    public ResponseEntity<ApiResponse<List<BankAccountResponseDTO>>> findByCompany(@PathVariable Long companyId) {
+        Company company = findCompanyOrThrow(companyId);
 
-        List<BankAccountResponseDTO> contas = bankAccountService.findByCompany(company)
+        List<BankAccountResponseDTO> accounts = bankAccountService.findByCompany(company)
                 .stream()
                 .map(BankAccountMapper::toResponseDTO)
                 .toList();
 
-        return ResponseEntity.ok(new ApiResponse<>("Contas listadas com sucesso!", contas));
+        return ResponseEntity.ok(new ApiResponse<>("Contas listadas com sucesso!", accounts));
     }
 
     // Endpoint para buscar a conta padrao de uma empresa
-    // Queremos devolver 200 OK, status generico para sucesso
     // GET localhost:8080/api/bank-accounts/company/{companyId}/default
     @GetMapping("/company/{companyId}/default")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findByDefault(@PathVariable Long companyId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma conta padrao encontrada!")
-                );
-
+        Company company = findCompanyOrThrow(companyId);
         BankAccount bankAccount = bankAccountService.findDefaultByCompany(company);
 
-        // Se nao houver conta padrao, lanca excecao 404 NOT FOUND
         if (bankAccount == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma conta padrao encontrada!");
         }
@@ -84,55 +75,82 @@ public class BankAccountController {
         return ResponseEntity.ok(new ApiResponse<>("Conta padrao encontrada com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
     }
 
-    // Endpoint para definir uma conta bancaria como padrao
-    // Queremos devolver 200 OK, status generico para sucesso
-    // PATCH localhost:8080/api/bank-accounts/{id}/default?companyId
-    @PatchMapping("/{id}/default")
-    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> defineDefault(@PathVariable Long id, @RequestParam Long companyId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")
-                );
-
+    // Endpoint para buscar uma conta bancaria pelo id dentro de uma empresa
+    // GET localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
+    @GetMapping("/company/{companyId}/accounts/{id}")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findById(
+            @PathVariable Long companyId,
+            @PathVariable Long id
+    ) {
+        Company company = findCompanyOrThrow(companyId);
         BankAccount bankAccount = bankAccountService.findById(id);
+        validateAccountBelongsToCompany(company, bankAccount);
+
+        return ResponseEntity.ok(new ApiResponse<>("Conta encontrada com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
+    }
+
+    // Endpoint para definir uma conta bancaria como padrao
+    // PATCH localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}/default
+    @PatchMapping("/company/{companyId}/accounts/{id}/default")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> defineDefault(
+            @PathVariable Long companyId,
+            @PathVariable Long id
+    ) {
+        Company company = findCompanyOrThrow(companyId);
+        BankAccount bankAccount = bankAccountService.findById(id);
+
         bankAccountService.defineDefaultAccount(company, bankAccount);
 
-        return ResponseEntity.ok(new ApiResponse<>("Conta nao padrao definica com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
+        return ResponseEntity.ok(new ApiResponse<>("Conta definida como padrao com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
     }
 
     // Endpoint para atualizar uma conta bancaria
-    // Queremos devolver 200 OK, status generico para sucesso
-    // PUT localhost:8080/api/bank-accounts/{id}
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(@Valid @PathVariable Long id, @RequestBody BankAccountRequestDTO dto) {
-        Company company = companyService.findById(dto.companyId())
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")
-                );
-
+    // PUT localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
+    @PutMapping("/company/{companyId}/accounts/{id}")
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(
+            @PathVariable Long companyId,
+            @PathVariable Long id,
+            @Valid @RequestBody BankAccountRequestDTO dto
+    ) {
+        Company company = findCompanyOrThrow(companyId);
         BankAccount bankAccount = bankAccountService.findById(id);
 
         BankAccount updated = bankAccountService.updateBankAccount(
-                company, bankAccount, dto.bankName(), dto.branch(), dto.accountNumber(), dto.accountType(), dto.defaultAccount()
+                company,
+                bankAccount,
+                dto.bankName(),
+                dto.branch(),
+                dto.accountNumber(),
+                dto.accountType(),
+                dto.defaultAccount()
         );
 
         return ResponseEntity.ok(new ApiResponse<>("Conta atualizada com sucesso!", BankAccountMapper.toResponseDTO(updated)));
     }
 
-
     // Endpoint para deletar uma conta bancaria
-    // Queremos devolver 200 OK, status generico para sucesso
-    // DELETE localhost:8080/api/bank-accounts/{id}
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam Long companyId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!")
-                );
-
+    // DELETE localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
+    @DeleteMapping("/company/{companyId}/accounts/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long companyId,
+            @PathVariable Long id
+    ) {
+        Company company = findCompanyOrThrow(companyId);
         BankAccount bankAccount = bankAccountService.findById(id);
+
         bankAccountService.deleteBankAccount(company, bankAccount);
 
         return ResponseEntity.noContent().build();
+    }
+
+    private Company findCompanyOrThrow(Long companyId) {
+        return companyService.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!"));
+    }
+
+    private void validateAccountBelongsToCompany(Company company, BankAccount bankAccount) {
+        if (!bankAccount.getCompany().getId().equals(company.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A conta bancaria nao pertence a empresa informada!");
+        }
     }
 }

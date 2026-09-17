@@ -24,13 +24,12 @@
         Empresas
       </a>
 
-      <!-- Enable this navigation item when its feature is ready. -->
-      <a class="item disabled">
+      <a class="item" routerLink="/bank-accounts" routerLinkActive="active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18M3 10h18M5 6l7-3 7 3v4H5z"/>
           <path d="M6 10v11M10 10v11M14 10v11M18 10v11"/>
         </svg>
-        Contas (Em breve)
+        Contas bancárias
       </a>
 
 
@@ -42,7 +41,7 @@
         </svg>
         Fluxo de caixa
       </a>
-      
+
       <!-- Enable this navigation item when its feature is ready. -->
       <a class="item disabled">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -69,9 +68,9 @@
         <span class="user-name">{{ user()?.name ?? 'Usuário' }}</span>
         <span class="user-role">{{ user()?.role === 'admin' ? 'Administrador' : 'Usuário' }}</span>
       </span>
-      <button 
+      <button
         type="button"
-        class="logout" 
+        class="logout"
         (click)="logout()"
         aria-label="Sair do sistema"
         title="Sair do sistema"

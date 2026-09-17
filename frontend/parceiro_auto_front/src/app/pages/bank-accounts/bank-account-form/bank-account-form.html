@@ -1,0 +1,97 @@
+<h2 class="mb-4">{{ editing ? 'Editar conta bancaria' : 'Nova conta bancaria' }}</h2>
+
+<div class="card">
+  <div class="card-body p-4">
+    @if (error()) {
+      <div class="alert alert-danger">{{ error() }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <h3 class="section">Vinculo</h3>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label" for="companyId">Empresa</label>
+          <select id="companyId" class="form-select"
+            [class.is-invalid]="isInvalid('companyId')" formControlName="companyId">
+            <option [ngValue]="null">
+              {{ loadingCompanies() ? 'Carregando empresas...' : 'Selecione uma empresa' }}
+            </option>
+            @for (company of companies(); track company.id) {
+              <option [ngValue]="company.id">
+                {{ company.tradeName }} - {{ company.cnpj }}
+              </option>
+            }
+          </select>
+          @if (isInvalid('companyId')) {
+            <div class="invalid-feedback d-block">Selecione uma empresa.</div>
+          }
+        </div>
+      </div>
+
+      <h3 class="section">Dados da conta</h3>
+
+      <div class="row">
+        <div class="col-md-5 mb-3">
+          <label class="form-label" for="bankName">Banco</label>
+          <input id="bankName" type="text" class="form-control" placeholder="Ex: Banco do Brasil, XP Investimentos"
+            [class.is-invalid]="isInvalid('bankName')" formControlName="bankName" />
+          @if (isInvalid('bankName')) {
+            <div class="invalid-feedback d-block">Informe o banco.</div>
+          }
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label" for="branch">Agencia</label>
+          <input id="branch" type="text" class="form-control" placeholder="0000" maxlength="4"
+            [class.is-invalid]="isInvalid('branch')" formControlName="branch" />
+          @if (isInvalid('branch')) {
+            <div class="invalid-feedback d-block">Informe apenas numeros, com no maximo 4 digitos.</div>
+          }
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="accountNumber">Numero da conta</label>
+          <input id="accountNumber" type="text" class="form-control" placeholder="000000000" maxlength="13"
+            [class.is-invalid]="isInvalid('accountNumber')" formControlName="accountNumber" />
+          @if (isInvalid('accountNumber')) {
+            <div class="invalid-feedback d-block">Informe apenas numeros, com no maximo 13 digitos.</div>
+          }
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label" for="accountType">Tipo de conta</label>
+          <select id="accountType" class="form-select" [class.is-invalid]="isInvalid('accountType')"
+            formControlName="accountType">
+            @for (type of accountTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+          @if (isInvalid('accountType')) {
+            <div class="invalid-feedback d-block">Selecione o tipo de conta.</div>
+          }
+        </div>
+
+        <div class="col-md-4 mb-3 d-flex align-items-end">
+          <div class="form-check form-switch pb-2">
+            <input class="form-check-input" type="checkbox" id="defaultAccount" formControlName="defaultAccount" />
+            <label class="form-check-label" for="defaultAccount">Definir como conta padrao</label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        <a routerLink="/bank-accounts" class="btn btn-light">Cancelar</a>
+        <button type="button" class="btn btn-outline-secondary" (click)="reset()">Limpar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+          }
+          {{ editing ? 'Salvar alteracoes' : 'Cadastrar conta' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

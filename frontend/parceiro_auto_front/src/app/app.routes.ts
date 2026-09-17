@@ -1,17 +1,18 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { Layout } from './components/layout/layout';
 
 import { Dashboard } from './pages/dashboard/dashboard';
-import { BankAccounts } from './pages/bank-accounts/bank-accounts';
 import { Reports } from './pages/reports/reports';
 import { AccessManagement } from './pages/access-management/access-management';
 
 import { CompanyList } from './pages/companies/company-list/company-list';
 import { CompanyForm } from './pages/companies/company-form/company-form';
 import { CompanyTransactions } from './pages/companies/company-transactions/company-transactions';
+import { BankAccountList } from './pages/bank-accounts/bank-account-list/bank-account-list';
+import { BankAccountForm } from './pages/bank-accounts/bank-account-form/bank-account-form';
 
 import { TransactionList } from './pages/transactions/transaction-list/transaction-list';
 import { TransactionForm } from './pages/transactions/transaction-form/transaction-form';
@@ -50,7 +51,15 @@ export const routes: Routes = [
         ],
       },
 
-      { path: 'bank-accounts', component: BankAccounts },
+      {
+        path: 'bank-accounts',
+        children: [
+          { path: '', component: BankAccountList, title: 'Contas bancárias' },
+          { path: 'new', component: BankAccountForm, title: 'Nova conta bancária' },
+          { path: ':id/edit', component: BankAccountForm, title: 'Editar conta bancária' },
+          { path: '**', redirectTo: '' },
+        ],
+      },
       { path: 'reports', component: Reports },
       { path: 'access-management', component: AccessManagement },
     ],
