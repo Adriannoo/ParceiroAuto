@@ -99,9 +99,9 @@ public class BankAccountController {
         Company company = findCompanyOrThrow(companyId);
         BankAccount bankAccount = bankAccountService.findById(id);
 
-        bankAccountService.defineDefaultAccount(company, bankAccount);
+        BankAccount updated = bankAccountService.defineDefaultAccount(company, bankAccount);
 
-        return ResponseEntity.ok(new ApiResponse<>("Conta definida como padrao com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
+        return ResponseEntity.ok(new ApiResponse<>("Conta definida como padrao com sucesso!", BankAccountMapper.toResponseDTO(updated)));
     }
 
     // Endpoint para atualizar uma conta bancaria

@@ -97,10 +97,23 @@
         <div class="col-md-4 mb-3">
           <label class="form-label" for="account">Conta</label>
           <select id="account" class="form-select"
-            [class.is-invalid]="isInvalid('account')" formControlName="account">
-            <option value="">Selecione</option>
-            @for (account of accounts; track account) {
-              <option [value]="account">{{ account }}</option>
+            [class.is-invalid]="isInvalid('account')"
+            [disabled]="!form.controls.companyId.value || loadingBankAccounts() || bankAccounts().length === 0"
+            formControlName="account">
+            @if (!form.controls.companyId.value) {
+              <option value="">Selecione uma empresa primeiro</option>
+            } @else if (loadingBankAccounts()) {
+              <option value="">Carregando contas...</option>
+            } @else if (bankAccounts().length === 0) {
+              <option value="">Nenhuma conta cadastrada</option>
+            } @else {
+              <option value="">Selecione</option>
+            }
+
+            @for (account of bankAccounts(); track account.id) {
+              <option [value]="accountOptionValue(account)">
+                {{ accountOptionValue(account) }}{{ account.defaultAccount ? ' (padrão)' : '' }}
+              </option>
             }
           </select>
 

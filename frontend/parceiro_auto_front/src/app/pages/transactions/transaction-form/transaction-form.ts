@@ -2,9 +2,11 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TransactionService } from '../transaction.service';
-import { CATEGORIES, ACCOUNTS, PAYMENT_METHODS, TRANSACTION_TYPES } from '../transaction.model';
+import { CATEGORIES, PAYMENT_METHODS, TRANSACTION_TYPES } from '../transaction.model';
 import { CompanyService } from '../../companies/company.service';
 import { Company } from '../../companies/company.model';
+import { BankAccount } from '../../bank-accounts/bank-account.model';
+import { BankAccountService } from '../../bank-accounts/bank-account.service';
 
 @Component({
   selector: 'app-transaction-form',
@@ -16,16 +18,18 @@ export class TransactionForm implements OnInit {
   private fb = inject(FormBuilder);
   private transactionService = inject(TransactionService);
   private companyService = inject(CompanyService);
+  private bankAccountService = inject(BankAccountService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
   transactionTypes = TRANSACTION_TYPES;
   paymentMethods = PAYMENT_METHODS;
-  accounts = ACCOUNTS;
   categories = CATEGORIES;
 
   companies = signal<Company[]>([]);
+  bankAccounts = signal<BankAccount[]>([]);
   transactionId = signal<number | null>(null);
+  loadingBankAccounts = signal(false);
   saving = signal(false);
   error = signal<string | null>(null);
 
@@ -54,6 +58,10 @@ export class TransactionForm implements OnInit {
       }
     });
 
+    this.form.controls.companyId.valueChanges.subscribe((companyId) => {
+      this.loadBankAccounts(companyId);
+    });
+
     const id = this.route.snapshot.paramMap.get('id');
 
     if (id) {
@@ -64,12 +72,55 @@ export class TransactionForm implements OnInit {
 
   private load(id: number): void {
     this.transactionService.findById(id).subscribe({
-      next: (transaction) => this.form.patchValue(transaction),
+      next: (transaction) => {
+        this.form.patchValue(transaction, { emitEvent: false });
+        this.loadBankAccounts(transaction.companyId, transaction.account);
+      },
       error: () => {
         this.error.set('Movimentação não encontrada.');
         this.form.disable();
       },
     });
+  }
+
+  private loadBankAccounts(companyId: number | null, selectedAccount = ''): void {
+    this.bankAccounts.set([]);
+
+    if (!companyId) {
+      this.form.controls.account.setValue('');
+      return;
+    }
+
+    this.loadingBankAccounts.set(true);
+
+    this.bankAccountService.listByCompany(companyId).subscribe({
+      next: (bankAccounts) => {
+        this.bankAccounts.set(bankAccounts);
+        this.loadingBankAccounts.set(false);
+
+        const currentAccount = selectedAccount || this.form.controls.account.value;
+        const accountExists = bankAccounts.some((account) => this.accountOptionValue(account) === currentAccount);
+
+        if (accountExists) {
+          this.form.controls.account.setValue(currentAccount);
+          return;
+        }
+
+        const defaultAccount = bankAccounts.find((account) => account.defaultAccount);
+        const firstAccount = defaultAccount ?? bankAccounts[0];
+
+        this.form.controls.account.setValue(firstAccount ? this.accountOptionValue(firstAccount) : '');
+      },
+      error: () => {
+        this.bankAccounts.set([]);
+        this.loadingBankAccounts.set(false);
+        this.form.controls.account.setValue('');
+      },
+    });
+  }
+
+  accountOptionValue(account: BankAccount): string {
+    return `${account.bankName} - Ag. ${account.branch} - Conta ${account.accountNumber}`;
   }
 
   private todayIso(): string {

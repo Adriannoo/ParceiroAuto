@@ -98,7 +98,7 @@ public class BankAccountService {
     }
 
     // Define uma conta bancária como padrão para a empresa, removendo a definição das outras contas.
-    public void defineDefaultAccount(
+    public BankAccount defineDefaultAccount(
             Company company,
             BankAccount bankAccount
     ) {
@@ -111,7 +111,7 @@ public class BankAccountService {
 
         bankAccount.setDefaultAccount(true);
 
-        bankAccountRepository.save(bankAccount);
+        return bankAccountRepository.save(bankAccount);
     }
 
     // Exclui uma conta bancária da empresa.
@@ -190,6 +190,8 @@ public class BankAccountService {
                 account.setDefaultAccount(false);
             }
         }
+
+        bankAccountRepository.saveAll(accounts);
     }
 
     // Verifica se a empresa foi informada.

@@ -21,6 +21,7 @@ export class BankAccountForm implements OnInit {
 
   bankAccountId = signal<number | null>(null);
   companies = signal<Company[]>([]);
+  currentDefaultAccount = signal(false);
 
   accountTypes = BANK_ACCOUNT_TYPES;
   saving = signal(false);
@@ -30,10 +31,9 @@ export class BankAccountForm implements OnInit {
   form = this.fb.group({
     companyId: [null as number | null, [Validators.required, Validators.min(1)]],
     bankName: ['', [Validators.required, Validators.maxLength(50)]],
-    branch: ['', [Validators.required, Validators.maxLength(4), Validators.pattern(/^\d+$/)]],
-    accountNumber: ['', [Validators.required, Validators.maxLength(13), Validators.pattern(/^\d+$/)]],
+    branch: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(4), Validators.pattern(/^\d+$/)]],
+    accountNumber: ['', [Validators.required, Validators.minLength(4), Validators.maxLength(13), Validators.pattern(/^\d+$/)]],
     accountType: ['CHECKING' as BankAccountType, [Validators.required]],
-    defaultAccount: [false],
   });
 
   get editing(): boolean {
@@ -57,8 +57,11 @@ export class BankAccountForm implements OnInit {
         this.companies.set(companies);
         this.loadingCompanies.set(false);
 
-        if (!this.form.controls.companyId.value && companies.length > 0) {
-          this.form.controls.companyId.setValue(companies[0].id);
+        const companyIdFromRoute = Number(this.route.snapshot.queryParamMap.get('companyId'));
+        const initialCompanyId = Number.isNaN(companyIdFromRoute) ? companies[0]?.id : companyIdFromRoute;
+
+        if (!this.form.controls.companyId.value && initialCompanyId) {
+          this.form.controls.companyId.setValue(initialCompanyId);
         }
 
         const id = this.bankAccountId();
@@ -82,7 +85,10 @@ export class BankAccountForm implements OnInit {
     }
 
     this.bankAccountService.findById(companyId, id).subscribe({
-      next: (bankAccount) => this.form.patchValue(bankAccount),
+      next: (bankAccount) => {
+        this.currentDefaultAccount.set(bankAccount.defaultAccount);
+        this.form.patchValue(bankAccount);
+      },
       error: () => {
         this.error.set('Conta bancaria nao encontrada.');
         this.form.disable();
@@ -108,7 +114,10 @@ export class BankAccountForm implements OnInit {
       return;
     }
 
-    const data = this.form.getRawValue() as BankAccountRequest;
+    const data = {
+      ...this.form.getRawValue(),
+      defaultAccount: this.editing ? this.currentDefaultAccount() : false,
+    } as BankAccountRequest;
     const id = this.bankAccountId();
 
     this.saving.set(true);
@@ -130,7 +139,6 @@ export class BankAccountForm implements OnInit {
     this.form.reset({
       companyId: this.companies()[0]?.id ?? null,
       accountType: 'CHECKING',
-      defaultAccount: false,
     });
     this.error.set(null);
   }

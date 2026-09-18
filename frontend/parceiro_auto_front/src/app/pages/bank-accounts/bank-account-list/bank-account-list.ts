@@ -30,6 +30,7 @@ export class BankAccountList implements OnInit {
   accountType = signal<AccountFilter>('all');
 
   bankAccountToDelete = signal<BankAccount | null>(null);
+  settingDefaultId = signal<number | null>(null);
 
   filtered = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -148,8 +149,21 @@ export class BankAccountList implements OnInit {
       return;
     }
 
+    this.settingDefaultId.set(bankAccount.id);
+
     this.bankAccountService.setDefault(bankAccount.id, bankAccount.companyId).subscribe({
-      next: () => this.loadBankAccounts(),
+      next: (updatedBankAccount) => {
+        this.bankAccounts.update((accounts) =>
+          accounts.map((account) => ({
+            ...account,
+            defaultAccount: account.id === updatedBankAccount.id,
+          })),
+        );
+        this.settingDefaultId.set(null);
+      },
+      error: () => {
+        this.settingDefaultId.set(null);
+      },
     });
   }
 }
