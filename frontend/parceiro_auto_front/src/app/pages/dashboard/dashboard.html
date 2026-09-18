@@ -5,9 +5,7 @@
   </div>
 
   <div class="actions">
-    <select class="form-select filter-select" [ngModel]="companyId()"
-      (ngModelChange)="companyId.set($event)">
-      <option value="all">Todas as empresas</option>
+    <select class="form-select filter-select" [ngModel]="companyId()" (ngModelChange)="setCurrentCompany($event)">
       @for (company of companies(); track company.id) {
         <option [ngValue]="company.id">{{ company.tradeName }}</option>
       }
@@ -127,14 +125,39 @@
       <ul class="recent">
         @for (m of recent(); track m.id) {
           <li>
-            <span class="date-pill">{{ date(m.date) }}</span>
-            <span class="recent-info">
-              <span class="recent-description">{{ m.description }}</span>
-              <small>{{ companyName(m.companyId) }} · {{ m.category }}</small>
-            </span>
+              <span class="date-pill">{{ date(m.date) }}</span>
+              <span class="recent-info">
+                <span class="recent-description">{{ m.description }}</span>
+                <small>{{ companyName(m.companyId) }} · {{ categoryName(m) }}</small>
+              </span>
             <span class="recent-value" [class.income]="m.type === 'ENTRADA'"
               [class.expense]="m.type === 'SAIDA'">
               {{ m.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(m.value) }}
+            </span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Próximas recorrências</h2>
+    </div>
+
+    @if (recurring().length === 0) {
+      <p class="text-muted inline-empty">Nenhuma movimentação recorrente cadastrada para a empresa atual.</p>
+    } @else {
+      <ul class="recent">
+        @for (item of recurring(); track item.recurrenceRuleId) {
+          <li>
+            <span class="date-pill">{{ date(item.nextDate) }}</span>
+            <span class="recent-info">
+              <span class="recent-description">{{ item.description }}</span>
+              <small>{{ item.frequency === 'MONTHLY' ? 'Mensal' : item.frequency }}</small>
+            </span>
+            <span class="recent-value" [class.income]="item.type === 'ENTRADA'" [class.expense]="item.type === 'SAIDA'">
+              {{ item.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(item.value) }}
             </span>
           </li>
         }

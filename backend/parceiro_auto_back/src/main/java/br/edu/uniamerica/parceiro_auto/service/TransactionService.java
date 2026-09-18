@@ -71,6 +71,8 @@ public class TransactionService {
                 date
         );
 
+        validateRelationsBelongToCompany(company, bankAccount, transactionCategory);
+
         log.info(
                 "Criando transacao empresa id:({}) conta id:({}) tipo:({}) valor:({})",
                 company.getId(), bankAccount.getId(), type, value
@@ -116,6 +118,11 @@ public class TransactionService {
                 );
     }
 
+    @Transactional(readOnly = true)
+    public List<Transaction> findAll() {
+        return transactionRepository.findAllByOrderByDateDescIdDesc();
+    }
+
     // Busca todas as transações de uma conta bancária.
     @Transactional(readOnly = true)
     public List<Transaction> findByBankAccount(BankAccount bankAccount) {
@@ -126,7 +133,7 @@ public class TransactionService {
             );
         }
 
-        return transactionRepository.findByBankAccount(bankAccount);
+        return transactionRepository.findByBankAccountOrderByDateDescIdDesc(bankAccount);
     }
 
     // Busca todas as transações de uma empresa.
@@ -139,7 +146,7 @@ public class TransactionService {
             );
         }
 
-        return transactionRepository.findByCompany(company);
+        return transactionRepository.findByCompanyOrderByDateDescIdDesc(company);
     }
 
     // Busca todas as transações de uma empresa com a quantidade definida pelo desenvolvedor.
@@ -206,6 +213,8 @@ public class TransactionService {
                 newMethod,
                 newDate
         );
+
+        validateRelationsBelongToCompany(transaction.getCompany(), newBankAccount, newCategory);
 
         log.info("Atualizando transacao id:({})", transaction.getId());
 
@@ -312,6 +321,32 @@ public class TransactionService {
         if (date == null) {
             throw new IllegalArgumentException(
                     "A data não pode ser nula"
+            );
+        }
+    }
+
+    private void validateRelationsBelongToCompany(
+            Company company,
+            BankAccount bankAccount,
+            TransactionCategory transactionCategory
+    ) {
+        if (bankAccount.getCompany() == null
+                || !company.getId().equals(bankAccount.getCompany().getId())) {
+            throw new IllegalArgumentException(
+                    "A conta bancária não pertence à empresa informada"
+            );
+        }
+
+        if (transactionCategory.getCompany() == null
+                || !company.getId().equals(transactionCategory.getCompany().getId())) {
+            throw new IllegalArgumentException(
+                    "A categoria não pertence à empresa informada"
+            );
+        }
+
+        if (!transactionCategory.isActive()) {
+            throw new IllegalArgumentException(
+                    "A categoria selecionada está inativa"
             );
         }
     }

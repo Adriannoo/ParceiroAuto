@@ -1,35 +1,25 @@
 <div class="page-header">
-  <h2 class="mb-0">Movimentações</h2>
+  <div>
+    <h2 class="mb-1">Movimentações</h2>
+    <small class="text-muted">
+      {{ filtered().length }} {{ filtered().length === 1 ? 'lançamento encontrado' : 'lançamentos encontrados' }}
+    </small>
+  </div>
   <a routerLink="/transactions/new" class="btn btn-primary text-nowrap">Nova movimentação</a>
-</div>
-
-<div class="summary">
-  <div class="summary-item">
-    <span>Entradas</span>
-    <strong class="income">{{ formatCurrency(totalIncome()) }}</strong>
-  </div>
-  <div class="summary-item">
-    <span>Saídas</span>
-    <strong class="expense">{{ formatCurrency(totalExpenses()) }}</strong>
-  </div>
-  <div class="summary-item">
-    <span>Saldo</span>
-    <strong [class.negative]="balance() < 0">{{ formatCurrency(balance()) }}</strong>
-  </div>
 </div>
 
 <div class="filters">
   <input
     type="search"
     class="form-control search"
-    placeholder="Buscar por descrição, categoria ou conta"
+    placeholder="Buscar por descrição, empresa, categoria ou conta"
     [ngModel]="searchTerm()"
     (ngModelChange)="searchTerm.set($event)" />
 
   <select
     class="form-select filter-select"
     [ngModel]="companyId()"
-    (ngModelChange)="companyId.set($event)">
+    (ngModelChange)="onCompanyFilterChange($event)">
     <option value="all">Todas as empresas</option>
     @for (company of companies(); track company.id) {
       <option [ngValue]="company.id">{{ company.tradeName }}</option>
@@ -50,6 +40,49 @@
   }
 </div>
 
+<div class="card recurrence-card mb-3">
+  <div class="card-body">
+    <div class="recurrence-header">
+      <div>
+        <h5 class="mb-1">Recorrências</h5>
+        <small class="text-muted">Gerencie contas que repetem automaticamente, como aluguel, internet ou conta de luz.</small>
+      </div>
+    </div>
+
+    @if (companyId() === 'all') {
+      <div class="empty-recurring">Selecione uma empresa no filtro para gerenciar as recorrências dela.</div>
+    } @else if (loadingRecurring()) {
+      <div class="text-muted py-2">Carregando recorrências...</div>
+    } @else if (recurringTransactions().length === 0) {
+      <div class="empty-recurring">Esta empresa ainda não tem movimentações recorrentes.</div>
+    } @else {
+      <div class="recurrence-list">
+        @for (recurrence of recurringTransactions(); track recurrence.recurrenceRuleId) {
+          <div class="recurrence-item">
+            <div>
+              <strong>{{ recurrence.description }}</strong>
+              <div class="recurrence-meta">
+                {{ recurrenceFrequencyLabel(recurrence.frequency) }} · próxima em {{ formatDate(recurrence.nextDate) }} ·
+                {{ recurrence.endDate ? 'até ' + formatDate(recurrence.endDate) : 'sem data final' }}
+              </div>
+            </div>
+
+            <div class="recurrence-value" [class.income]="recurrence.type === 'ENTRADA'" [class.expense]="recurrence.type === 'SAIDA'">
+              <span>{{ recurrenceTypeLabel(recurrence) }}</span>
+              <strong>{{ recurrence.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(recurrence.value) }}</strong>
+            </div>
+
+            <div class="recurrence-actions">
+              <button type="button" class="btn btn-sm btn-outline-primary" (click)="openRecurrenceEdit(recurrence)">Editar</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="openRecurrenceDelete(recurrence)">Encerrar</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
 <div class="card">
   <div class="card-body p-0">
     @if (loading()) {
@@ -58,7 +91,7 @@
           <span class="visually-hidden">Carregando</span>
         </div>
       </div>
-    } @else if (filtered().length === 0) {
+    } @else if (recentTransactions().length === 0) {
       <div class="text-center py-5 px-3">
         <p class="text-muted mb-3">
           {{ transactions().length === 0
@@ -83,21 +116,27 @@
               <th>Descrição</th>
               <th>Empresa</th>
               <th>Categoria</th>
+              <th>Tipo</th>
               <th>Forma</th>
               <th class="text-end">Valor</th>
               <th class="text-end">Ações</th>
             </tr>
           </thead>
           <tbody>
-            @for (m of filtered(); track m.id) {
+            @for (m of recentTransactions(); track m.id) {
               <tr>
                 <td class="text-nowrap">{{ formatDate(m.date) }}</td>
                 <td>
                   <span class="description">{{ m.description }}</span>
-                  <small class="account">{{ m.account }}</small>
+                  <small class="account">{{ accountName(m) }}</small>
                 </td>
                 <td>{{ companyName(m.companyId) }}</td>
-                <td><span class="tag">{{ m.category }}</span></td>
+                <td><span class="tag">{{ categoryName(m) }}</span></td>
+                <td>
+                  <span class="tag" [class.income-tag]="m.type === 'ENTRADA'" [class.expense-tag]="m.type === 'SAIDA'">
+                    {{ transactionTypeLabel(m) }}
+                  </span>
+                </td>
                 <td>{{ paymentMethodLabel(m) }}</td>
                 <td class="text-end text-nowrap" [class.income]="m.type === 'ENTRADA'"
                     [class.expense]="m.type === 'SAIDA'">
@@ -113,9 +152,91 @@
           </tbody>
         </table>
       </div>
+
+      @if (filtered().length > recentTransactions().length) {
+        <div class="table-footer">
+          Exibindo os 10 lançamentos mais recentes. Use os filtros para encontrar movimentações específicas.
+        </div>
+      }
     }
   </div>
 </div>
+
+@if (recurrenceToEdit(); as recurrence) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form [formGroup]="recurrenceForm" (ngSubmit)="saveRecurrence()" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title">Editar recorrência</h5>
+            <button type="button" class="btn-close" [disabled]="savingRecurrence()" (click)="closeRecurrenceEdit()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted">
+              {{ recurrence.description }} · {{ formatCurrency(recurrence.value) }}
+            </p>
+
+            <div class="mb-3">
+              <label class="form-label" for="frequency">Frequência</label>
+              <select id="frequency" class="form-select" formControlName="frequency">
+                @for (frequency of recurrenceFrequencies; track frequency.value) {
+                  <option [value]="frequency.value">{{ frequency.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="endDate">Repetir até (opcional)</label>
+              <input id="endDate" type="date" class="form-control" formControlName="endDate" />
+              <small class="text-muted">Deixe vazio para repetir sem data final.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" [disabled]="savingRecurrence()" (click)="closeRecurrenceEdit()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="savingRecurrence()">
+              @if (savingRecurrence()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+              }
+              Salvar recorrência
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
+
+@if (recurrenceToDelete(); as recurrence) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Encerrar recorrência</h5>
+          <button type="button" class="btn-close" [disabled]="savingRecurrence()" (click)="closeRecurrenceDelete()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Encerrar a recorrência de <strong>{{ recurrence.description }}</strong>?
+            A movimentação original continua cadastrada, só deixa de repetir.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" [disabled]="savingRecurrence()" (click)="closeRecurrenceDelete()">Cancelar</button>
+          <button type="button" class="btn btn-danger" [disabled]="savingRecurrence()" (click)="confirmRecurrenceDelete()">
+            @if (savingRecurrence()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Encerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
 
 @if (transactionToDelete(); as m) {
   <div class="modal fade show d-block" tabindex="-1">

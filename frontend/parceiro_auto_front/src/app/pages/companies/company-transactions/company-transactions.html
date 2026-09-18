@@ -98,9 +98,9 @@
                   <td class="text-nowrap">{{ date(m.date) }}</td>
                   <td>
                     <span class="description">{{ m.description }}</span>
-                    <small class="account">{{ m.account }}</small>
+                    <small class="account">{{ accountName(m) }}</small>
                   </td>
-                  <td><span class="tag">{{ m.category }}</span></td>
+                  <td><span class="tag">{{ categoryName(m) }}</span></td>
                   <td>{{ method(m) }}</td>
                   <td class="text-end text-nowrap"
                       [class.income]="m.type === 'ENTRADA'"

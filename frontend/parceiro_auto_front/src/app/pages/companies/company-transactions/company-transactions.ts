@@ -1,6 +1,8 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { BankAccount } from '../../bank-accounts/bank-account.model';
+import { BankAccountService } from '../../bank-accounts/bank-account.service';
 import { CompanyService } from '../company.service';
 import {
   Company,
@@ -10,7 +12,7 @@ import {
   taxRegimeLabel,
 } from '../company.model';
 import { TransactionService } from '../../transactions/transaction.service';
-import { Transaction, paymentMethodLabel } from '../../transactions/transaction.model';
+import { Transaction, TransactionCategory, paymentMethodLabel } from '../../transactions/transaction.model';
 
 @Component({
   selector: 'app-company-transactions',
@@ -21,10 +23,13 @@ import { Transaction, paymentMethodLabel } from '../../transactions/transaction.
 export class CompanyTransactions implements OnInit {
   private companyService = inject(CompanyService);
   private transactionService = inject(TransactionService);
+  private bankAccountService = inject(BankAccountService);
   private route = inject(ActivatedRoute);
 
   company = signal<Company | null>(null);
   transactions = signal<Transaction[]>([]);
+  bankAccounts = signal<BankAccount[]>([]);
+  categories = signal<TransactionCategory[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
 
@@ -52,11 +57,15 @@ export class CompanyTransactions implements OnInit {
 
     forkJoin({
       company: this.companyService.findById(id),
-      transactions: this.transactionService.list(),
+      transactions: this.transactionService.listByCompany(id),
+      bankAccounts: this.bankAccountService.listByCompany(id),
+      categories: this.transactionService.listCategoriesByCompany(id),
     }).subscribe({
-      next: ({ company, transactions }) => {
+      next: ({ company, transactions, bankAccounts, categories }) => {
         this.company.set(company);
-        this.transactions.set(transactions.filter((m) => m.companyId === id));
+        this.transactions.set(transactions);
+        this.bankAccounts.set(bankAccounts);
+        this.categories.set(categories);
         this.loading.set(false);
       },
       error: () => {
@@ -84,6 +93,16 @@ export class CompanyTransactions implements OnInit {
 
   method(m: Transaction): string {
     return paymentMethodLabel(m.method);
+  }
+
+  accountName(transaction: Transaction): string {
+    const account = this.bankAccounts().find((item) => item.id === transaction.bankAccountId);
+
+    return account ? `${account.bankName} - ${account.accountNumber}` : 'Conta removida';
+  }
+
+  categoryName(transaction: Transaction): string {
+    return this.categories().find((category) => category.id === transaction.transactionCategoryId)?.name ?? 'Categoria removida';
   }
 
   formatCurrency(value: number): string {

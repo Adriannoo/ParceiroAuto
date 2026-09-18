@@ -1,11 +1,12 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, effect, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of, switchMap } from 'rxjs';
 import { CompanyService } from '../companies/company.service';
 import { Company } from '../companies/company.model';
 import { TransactionService } from '../transactions/transaction.service';
-import { Transaction } from '../transactions/transaction.model';
+import { RecurringTransaction, Transaction, TransactionCategory } from '../transactions/transaction.model';
+import { CurrentCompanyService } from '../../services/current-company.service';
 
 interface MonthlyBar {
   label: string;
@@ -30,12 +31,15 @@ interface CategorySlice {
 export class Dashboard implements OnInit {
   private companyService = inject(CompanyService);
   private transactionService = inject(TransactionService);
+  private currentCompanyService = inject(CurrentCompanyService);
 
   companies = signal<Company[]>([]);
   all = signal<Transaction[]>([]);
+  categories = signal<TransactionCategory[]>([]);
+  recurring = signal<RecurringTransaction[]>([]);
   loading = signal(false);
 
-  companyId = signal<number | 'all'>('all');
+  companyId = this.currentCompanyService.currentCompanyId;
 
   today = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',
@@ -46,11 +50,16 @@ export class Dashboard implements OnInit {
   /** Current month in YYYY-MM format, used to filter transactions. */
   private currentMonth = new Date().toISOString().slice(0, 7);
 
+  constructor() {
+    effect(() => {
+      this.companyId();
+      this.loadRecurring();
+    });
+  }
+
   transactions = computed(() => {
     const filter = this.companyId();
-    return filter === 'all'
-      ? this.all()
-      : this.all().filter((m) => m.companyId === filter);
+    return filter === null ? this.all() : this.all().filter((m) => m.companyId === filter);
   });
 
   monthlyTransactions = computed(() =>
@@ -107,7 +116,8 @@ export class Dashboard implements OnInit {
     const counts = new Map<string, number>();
 
     for (const m of expenses) {
-      counts.set(m.category, (counts.get(m.category) ?? 0) + m.value);
+      const category = this.categoryName(m);
+      counts.set(category, (counts.get(category) ?? 0) + m.value);
     }
 
     return [...counts.entries()]
@@ -132,10 +142,27 @@ export class Dashboard implements OnInit {
     forkJoin({
       companies: this.companyService.list(),
       transactions: this.transactionService.list(),
-    }).subscribe({
-      next: ({ companies, transactions }) => {
+    }).pipe(
+      switchMap(({ companies, transactions }) => {
         this.companies.set(companies);
+        this.currentCompanyService.ensureCompany(companies.filter((company) => company.active).map((company) => company.id));
         this.all.set(transactions);
+
+        if (companies.length === 0) {
+          return of({ categories: [], recurring: [] });
+        }
+
+        const currentCompanyId = this.companyId() ?? companies[0].id;
+
+        return forkJoin({
+          categories: forkJoin(companies.map((company) => this.transactionService.listCategoriesByCompany(company.id))),
+          recurring: this.transactionService.listNextRecurringByCompany(currentCompanyId, 3),
+        });
+      }),
+    ).subscribe({
+      next: ({ categories, recurring }) => {
+        this.categories.set(categories.flat());
+        this.recurring.set(recurring);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -148,6 +175,29 @@ export class Dashboard implements OnInit {
 
   companyName(id: number): string {
     return this.companies().find((e) => e.id === id)?.tradeName ?? 'Empresa removida';
+  }
+
+  setCurrentCompany(companyId: number | string): void {
+    this.currentCompanyService.setCurrentCompanyId(Number(companyId));
+    this.loadRecurring();
+  }
+
+  private loadRecurring(): void {
+    const companyId = this.companyId();
+
+    if (!companyId) {
+      this.recurring.set([]);
+      return;
+    }
+
+    this.transactionService.listNextRecurringByCompany(companyId, 3).subscribe({
+      next: (recurring) => this.recurring.set(recurring),
+      error: () => this.recurring.set([]),
+    });
+  }
+
+  categoryName(transaction: Transaction): string {
+    return this.categories().find((category) => category.id === transaction.transactionCategoryId)?.name ?? 'Categoria removida';
   }
 
   formatCurrency(value: number): string {

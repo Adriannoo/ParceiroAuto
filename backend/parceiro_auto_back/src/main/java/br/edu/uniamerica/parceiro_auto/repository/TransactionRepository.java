@@ -13,9 +13,11 @@ import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    List<Transaction> findByBankAccount(BankAccount bankAccount);
+    List<Transaction> findAllByOrderByDateDescIdDesc();
 
-    List<Transaction> findByCompany(Company company);
+    List<Transaction> findByBankAccountOrderByDateDescIdDesc(BankAccount bankAccount);
+
+    List<Transaction> findByCompanyOrderByDateDescIdDesc(Company company);
 
     List<Transaction> findByCompanyAndTransactionCategory(Company company, TransactionCategory category);
 

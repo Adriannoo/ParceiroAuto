@@ -53,6 +53,31 @@ $texto-grupo: #6b7280;
   flex-direction: column;
 }
 
+.current-company {
+  padding: 10px;
+  margin: 6px 0 10px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    color: $texto-grupo;
+    font-size: 0.7rem;
+  }
+}
+
+.company-select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  background-color: #202631;
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+}
+
 .group {
   font-size: 0.7rem;
   color: $texto-grupo;
@@ -199,6 +224,7 @@ $texto-grupo: #6b7280;
   }
 
   .group,
+  .current-company,
   .footer {
     display: none;
   }

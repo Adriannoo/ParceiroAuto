@@ -80,16 +80,40 @@
         </div>
 
         <div class="col-md-3 mb-3">
-          <label class="form-label" for="category">Categoria</label>
-          <select id="category" class="form-select"
-            [class.is-invalid]="isInvalid('category')" formControlName="category">
-            <option value="">Selecione</option>
-            @for (category of categories; track category) {
-              <option [value]="category">{{ category }}</option>
-            }
-          </select>
+          <div class="label-row">
+            <label class="form-label mb-0" for="category">Categoria</label>
+            <button
+              type="button"
+              class="add-category-button"
+              title="Criar categoria"
+              [disabled]="!form.controls.companyId.value || loadingOptions()"
+              (click)="openCategoryModal()">
+              +
+            </button>
+          </div>
 
-          @if (isInvalid('category')) {
+          <div class="input-with-action">
+            <select id="category" class="form-select"
+              [class.is-invalid]="isInvalid('transactionCategoryId')"
+              [disabled]="!form.controls.companyId.value || loadingOptions() || filteredCategories().length === 0"
+              formControlName="transactionCategoryId">
+              @if (!form.controls.companyId.value) {
+                <option [ngValue]="null">Selecione uma empresa primeiro</option>
+              } @else if (loadingOptions()) {
+                <option [ngValue]="null">Carregando categorias...</option>
+              } @else if (filteredCategories().length === 0) {
+                <option [ngValue]="null">Nenhuma categoria para este tipo</option>
+              } @else {
+                <option [ngValue]="null">Selecione</option>
+              }
+
+              @for (category of filteredCategories(); track category.id) {
+                <option [ngValue]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </div>
+
+          @if (isInvalid('transactionCategoryId')) {
             <div class="invalid-feedback d-block">Selecione a categoria.</div>
           }
         </div>
@@ -97,27 +121,27 @@
         <div class="col-md-4 mb-3">
           <label class="form-label" for="account">Conta</label>
           <select id="account" class="form-select"
-            [class.is-invalid]="isInvalid('account')"
-            [disabled]="!form.controls.companyId.value || loadingBankAccounts() || bankAccounts().length === 0"
-            formControlName="account">
+            [class.is-invalid]="isInvalid('bankAccountId')"
+            [disabled]="!form.controls.companyId.value || loadingOptions() || bankAccounts().length === 0"
+            formControlName="bankAccountId">
             @if (!form.controls.companyId.value) {
-              <option value="">Selecione uma empresa primeiro</option>
-            } @else if (loadingBankAccounts()) {
-              <option value="">Carregando contas...</option>
+              <option [ngValue]="null">Selecione uma empresa primeiro</option>
+            } @else if (loadingOptions()) {
+              <option [ngValue]="null">Carregando contas...</option>
             } @else if (bankAccounts().length === 0) {
-              <option value="">Nenhuma conta cadastrada</option>
+              <option [ngValue]="null">Nenhuma conta cadastrada</option>
             } @else {
-              <option value="">Selecione</option>
+              <option [ngValue]="null">Selecione</option>
             }
 
             @for (account of bankAccounts(); track account.id) {
-              <option [value]="accountOptionValue(account)">
-                {{ accountOptionValue(account) }}{{ account.defaultAccount ? ' (padrão)' : '' }}
+              <option [ngValue]="account.id">
+                {{ accountLabel(account) }}{{ account.defaultAccount ? ' (padrão)' : '' }}
               </option>
             }
           </select>
 
-          @if (isInvalid('account')) {
+          @if (isInvalid('bankAccountId')) {
             <div class="invalid-feedback d-block">Selecione a conta.</div>
           }
         </div>
@@ -130,6 +154,30 @@
             }
           </select>
         </div>
+
+        <div class="col-md-12 mb-2">
+          <label class="recurrence-check">
+            <input type="checkbox" formControlName="recurring" />
+            Movimentação recorrente
+          </label>
+        </div>
+
+        @if (form.controls.recurring.value) {
+          <div class="col-md-4 mb-3">
+            <label class="form-label" for="recurrenceFrequency">Frequência</label>
+            <select id="recurrenceFrequency" class="form-select" formControlName="recurrenceFrequency">
+              @for (frequency of recurrenceFrequencies; track frequency.value) {
+                <option [value]="frequency.value">{{ frequency.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <label class="form-label" for="recurrenceEndDate">Repetir até (opcional)</label>
+            <input id="recurrenceEndDate" type="date" class="form-control" formControlName="recurrenceEndDate" />
+            <small class="text-muted">Deixe vazio para repetir sem data final.</small>
+          </div>
+        }
       </div>
 
       <hr class="my-4" />
@@ -147,3 +195,57 @@
     </form>
   </div>
 </div>
+
+@if (categoryModalOpen()) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title">Nova categoria</h5>
+            <button type="button" class="btn-close" [disabled]="savingCategory()" (click)="closeCategoryModal()"></button>
+          </div>
+
+          <div class="modal-body">
+            @if (categoryError()) {
+              <div class="alert alert-danger">{{ categoryError() }}</div>
+            }
+
+            <div class="mb-3">
+              <label class="form-label" for="categoryName">Nome da categoria</label>
+              <input
+                id="categoryName"
+                type="text"
+                class="form-control"
+                placeholder="Ex: Serviços, Peças, Impostos"
+                [class.is-invalid]="isCategoryInvalid('name')"
+                formControlName="name" />
+
+              @if (isCategoryInvalid('name')) {
+                <div class="invalid-feedback d-block">
+                  Informe um nome com pelo menos 3 caracteres.
+                </div>
+              }
+            </div>
+
+            <div class="category-type-preview">
+              Tipo: <strong>{{ selectedType() === 'ENTRADA' ? 'Entrada' : 'Saída' }}</strong>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" [disabled]="savingCategory()" (click)="closeCategoryModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="savingCategory()">
+              @if (savingCategory()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+              }
+              Criar categoria
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}

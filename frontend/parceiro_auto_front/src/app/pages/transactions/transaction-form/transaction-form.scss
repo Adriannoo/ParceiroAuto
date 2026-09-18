@@ -14,6 +14,54 @@ $vermelho: #a32d2d;
   color: #4a4a4a;
 }
 
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.add-category-button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d6dbe3;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: $azul;
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: $azul;
+    background-color: #f4f8ff;
+  }
+
+  &:disabled {
+    color: #9ca3af;
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+  }
+}
+
+.category-type-preview {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  color: #4b5563;
+  font-size: 0.88rem;
+}
+
+.recurrence-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
 .form-control:focus,
 .form-select:focus {
   border-color: $azul;

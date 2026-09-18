@@ -1,156 +1,104 @@
-﻿import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { delay } from 'rxjs/operators';
-import { Transaction } from './transaction.model';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { ApiResponse } from '../../models/api-response.model';
+import {
+  RecurringTransaction,
+  RecurrenceRuleRequest,
+  Transaction,
+  TransactionCategory,
+  TransactionCategoryRequest,
+  TransactionRequest,
+} from './transaction.model';
 
 @Injectable({ providedIn: 'root' })
 export class TransactionService {
-  private readonly STORAGE_KEY = 'parceiro-auto:transactions';
-  private readonly LATENCY = 300;
-
-  private readonly SEED: Transaction[] = [
-    {
-      id: 1,
-      companyId: 1,
-      account: 'Conta Corrente',
-      category: 'Vendas',
-      type: 'ENTRADA',
-      description: 'Venda de peças ao cliente Souza',
-      value: 4850,
-      date: '2026-08-03',
-      method: 'PIX',
-    },
-    {
-      id: 2,
-      companyId: 1,
-      account: 'Conta Corrente',
-      category: 'Fornecedores',
-      type: 'SAIDA',
-      description: 'Compra de estoque - distribuidora Bosch',
-      value: 2310.5,
-      date: '2026-08-05',
-      method: 'BOLETO',
-    },
-    {
-      id: 3,
-      companyId: 1,
-      account: 'Conta Corrente',
-      category: 'Salários',
-      type: 'SAIDA',
-      description: 'Folha de pagamento de julho',
-      value: 8200,
-      date: '2026-08-05',
-      method: 'TRANSFERENCIA',
-    },
-    {
-      id: 4,
-      companyId: 2,
-      account: 'Caixa',
-      category: 'Serviços',
-      type: 'ENTRADA',
-      description: 'Revisão completa - frota Martins',
-      value: 3120,
-      date: '2026-08-08',
-      method: 'CARTAO_CREDITO',
-    },
-    {
-      id: 5,
-      companyId: 1,
-      account: 'Conta Corrente',
-      category: 'Aluguel',
-      type: 'SAIDA',
-      description: 'Aluguel do galpão',
-      value: 4500,
-      date: '2026-08-10',
-      method: 'PIX',
-    },
-    {
-      id: 6,
-      companyId: 2,
-      account: 'Conta Corrente',
-      category: 'Vendas',
-      type: 'ENTRADA',
-      description: 'Venda balcão - lote de filtros',
-      value: 1980.75,
-      date: '2026-08-12',
-      method: 'DINHEIRO',
-    },
-  ];
-
-  constructor() {
-    if (localStorage.getItem(this.STORAGE_KEY) === null) {
-      this.write(this.SEED);
-    }
-  }
-
-  private read(): Transaction[] {
-    try {
-      const raw = localStorage.getItem(this.STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as Transaction[]) : [];
-    } catch {
-      this.write(this.SEED);
-      return [...this.SEED];
-    }
-  }
-
-  private write(transactions: Transaction[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(transactions));
-  }
-
-  private generateId(transactions: Transaction[]): number {
-    return transactions.reduce((largest, m) => Math.max(largest, m.id), 0) + 1;
-  }
+  private http = inject(HttpClient);
+  private readonly apiUrl = 'http://localhost:8080/api/transactions';
+  private readonly categoryApiUrl = 'http://localhost:8080/api/transaction-categories';
+  private readonly recurrenceApiUrl = 'http://localhost:8080/api/recurrence-rules';
 
   list(): Observable<Transaction[]> {
-    return of(this.read()).pipe(delay(this.LATENCY));
+    return this.http.get<ApiResponse<Transaction[]>>(this.apiUrl).pipe(
+      map(response => response.dados)
+    );
+  }
+
+  listByCompany(companyId: number): Observable<Transaction[]> {
+    return this.http.get<ApiResponse<Transaction[]>>(`${this.apiUrl}/company/${companyId}`).pipe(
+      map(response => response.dados)
+    );
   }
 
   findById(id: number): Observable<Transaction> {
-    const transaction = this.read().find((m) => m.id === id);
-
-    if (!transaction) {
-      return throwError(() => new Error(`Movimentação ${id} não encontrada.`));
-    }
-
-    return of(transaction).pipe(delay(this.LATENCY));
+    return this.http.get<ApiResponse<Transaction>>(`${this.apiUrl}/${id}`).pipe(
+      map(response => response.dados)
+    );
   }
 
-  create(data: Omit<Transaction, 'id'>): Observable<Transaction> {
-    const transactions = this.read();
-    const created: Transaction = { ...data, id: this.generateId(transactions) };
-
-    transactions.push(created);
-    this.write(transactions);
-
-    return of(created).pipe(delay(this.LATENCY));
+  create(transaction: TransactionRequest): Observable<Transaction> {
+    return this.http.post<ApiResponse<Transaction>>(this.apiUrl, transaction).pipe(
+      map(response => response.dados)
+    );
   }
 
-  update(transaction: Transaction): Observable<Transaction> {
-    const transactions = this.read();
-    const index = transactions.findIndex((m) => m.id === transaction.id);
-
-    if (index === -1) {
-      return throwError(() => new Error(`Movimentação ${transaction.id} não encontrada.`));
-    }
-
-    transactions[index] = { ...transaction };
-    this.write(transactions);
-
-    return of(transaction).pipe(delay(this.LATENCY));
+  update(id: number, transaction: TransactionRequest): Observable<Transaction> {
+    return this.http.put<ApiResponse<Transaction>>(`${this.apiUrl}/${id}`, transaction).pipe(
+      map(response => response.dados)
+    );
   }
 
   delete(id: number): Observable<void> {
-    this.write(this.read().filter((m) => m.id !== id));
-
-    return of(void 0).pipe(delay(this.LATENCY));
+    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+      map(() => void 0)
+    );
   }
 
-  /** Checks for transactions linked to a company before deletion. */
-  hasTransactions(companyId: number): boolean {
-    return this.read().some((m) => m.companyId === companyId);
+  listCategoriesByCompany(companyId: number): Observable<TransactionCategory[]> {
+    return this.http.get<ApiResponse<TransactionCategory[]>>(`${this.categoryApiUrl}/company/${companyId}`).pipe(
+      map(response => response.dados)
+    );
   }
 
-  restoreExamples(): void {
-    this.write(this.SEED);
+  createCategory(companyId: number, category: TransactionCategoryRequest): Observable<TransactionCategory> {
+    return this.http.post<ApiResponse<TransactionCategory>>(`${this.categoryApiUrl}/company/${companyId}`, category).pipe(
+      map(response => response.dados)
+    );
+  }
+
+  updateCategory(companyId: number, categoryId: number, category: TransactionCategoryRequest): Observable<TransactionCategory> {
+    return this.http.put<ApiResponse<TransactionCategory>>(`${this.categoryApiUrl}/company/${companyId}/${categoryId}`, category).pipe(
+      map(response => response.dados)
+    );
+  }
+
+  deleteCategory(companyId: number, categoryId: number): Observable<void> {
+    return this.http.delete(`${this.categoryApiUrl}/company/${companyId}/${categoryId}`).pipe(
+      map(() => void 0)
+    );
+  }
+
+  listNextRecurringByCompany(companyId: number, limit = 3): Observable<RecurringTransaction[]> {
+    return this.http.get<ApiResponse<RecurringTransaction[]>>(`${this.recurrenceApiUrl}/company/${companyId}/next?limit=${limit}`).pipe(
+      map(response => response.dados)
+    );
+  }
+
+  listRecurringByCompany(companyId: number): Observable<RecurringTransaction[]> {
+    return this.http.get<ApiResponse<RecurringTransaction[]>>(`${this.recurrenceApiUrl}/company/${companyId}`).pipe(
+      map(response => response.dados)
+    );
+  }
+
+  updateRecurrence(id: number, recurrence: RecurrenceRuleRequest): Observable<RecurringTransaction> {
+    return this.http.put<ApiResponse<RecurringTransaction>>(`${this.recurrenceApiUrl}/${id}`, recurrence).pipe(
+      map(response => response.dados)
+    );
+  }
+
+  deleteRecurrence(id: number): Observable<void> {
+    return this.http.delete(`${this.recurrenceApiUrl}/${id}`).pipe(
+      map(() => void 0)
+    );
   }
 }

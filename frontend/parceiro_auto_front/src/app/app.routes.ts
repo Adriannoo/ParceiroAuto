@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
@@ -10,6 +10,7 @@ import { AccessManagement } from './pages/access-management/access-management';
 
 import { CompanyList } from './pages/companies/company-list/company-list';
 import { CompanyForm } from './pages/companies/company-form/company-form';
+import { CompanyCategories } from './pages/companies/company-categories/company-categories';
 import { CompanyTransactions } from './pages/companies/company-transactions/company-transactions';
 import { BankAccountList } from './pages/bank-accounts/bank-account-list/bank-account-list';
 import { BankAccountForm } from './pages/bank-accounts/bank-account-form/bank-account-form';
@@ -36,6 +37,7 @@ export const routes: Routes = [
           { path: '', component: CompanyList, title: 'Empresas' },
           { path: 'new', component: CompanyForm, title: 'Nova empresa' },
           { path: ':id/edit', component: CompanyForm, title: 'Editar empresa' },
+          { path: ':id/categories', component: CompanyCategories, title: 'Categorias da empresa' },
           { path: ':id/transactions', component: CompanyTransactions, title: 'Lançamentos da empresa' },
           { path: '**', redirectTo: '' },
         ],
