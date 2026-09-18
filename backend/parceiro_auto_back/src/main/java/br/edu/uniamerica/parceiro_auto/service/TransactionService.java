@@ -3,6 +3,9 @@ package br.edu.uniamerica.parceiro_auto.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -149,17 +152,23 @@ public class TransactionService {
         return transactionRepository.findByCompanyOrderByDateDescIdDesc(company);
     }
 
-    // Busca todas as transações de uma empresa com a quantidade definida pelo desenvolvedor.
+    // Busca as ultimas movimentacoes por data e ID, com limite aplicado no banco.
     @Transactional(readOnly = true)
     public List<Transaction> findLastByCompany(
             Company company,
             int limit
     ) {
 
-        return findByCompany(company)
-                .stream()
-                .limit(limit)
-                .toList();
+        // Impede limites invalidos e consultas muito grandes nesse endpoint.
+        if (company == null || company.getId() == null) {
+            throw new IllegalArgumentException("A empresa deve estar cadastrada");
+        }
+        if (limit < 1 || limit > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O limite deve estar entre 1 e 100");
+        }
+
+        // A ordenacao por data e ID ja esta definida no repository.
+        return transactionRepository.findByCompanyOrderByDateDescIdDesc(company, PageRequest.of(0, limit));
     }
 
     // Atualiza uma transação, mantendo a data original dela.
@@ -325,11 +334,16 @@ public class TransactionService {
         }
     }
 
+    // Valida os vinculos antes de alterar qualquer saldo da movimentacao.
     private void validateRelationsBelongToCompany(
             Company company,
             BankAccount bankAccount,
             TransactionCategory transactionCategory
     ) {
+        if (company.getId() == null) {
+            throw new IllegalArgumentException("A empresa deve estar cadastrada");
+        }
+
         if (bankAccount.getCompany() == null
                 || !company.getId().equals(bankAccount.getCompany().getId())) {
             throw new IllegalArgumentException(

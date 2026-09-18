@@ -31,7 +31,7 @@ public class BankAccountController {
 
     // Endpoint para criar uma nova conta bancaria
     // Queremos devolver 201 CREATED, que e o status para criacao.
-    // POST localhost:8080/api/bank-accounts
+    // POST localhost:8080/api/bank-accounts/company/{companyId}
     @PostMapping("/company/{companyId}")
     @Operation(summary = "Cadastrar conta bancária")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
@@ -100,7 +100,7 @@ public class BankAccountController {
 
     // Endpoint para definir uma conta bancaria como padrao
     // Queremos devolver 200 OK, status generico para sucesso
-    // PATCH localhost:8080/api/bank-accounts/{id}/default?companyId
+    // PATCH localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}/default
     @PatchMapping("/company/{companyId}/accounts/{id}/default")
     @Operation(summary = "Definir conta padrão")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> defineDefault(
@@ -117,7 +117,7 @@ public class BankAccountController {
 
     // Endpoint para atualizar uma conta bancaria
     // Queremos devolver 200 OK, status generico para sucesso
-    // PUT localhost:8080/api/bank-accounts/{id}
+    // PUT localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
     @PutMapping("/company/{companyId}/accounts/{id}")
     @Operation(summary = "Atualizar conta bancária")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(
@@ -142,8 +142,8 @@ public class BankAccountController {
     }
 
     // Endpoint para deletar uma conta bancaria
-    // Queremos devolver 200 OK, status generico para sucesso
-    // DELETE localhost:8080/api/bank-accounts/{id}
+    // Devolve 204 NO CONTENT, sem corpo de resposta.
+    // DELETE localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
     @DeleteMapping("/company/{companyId}/accounts/{id}")
     @Operation(summary = "Excluir conta bancária")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Excluído com sucesso, sem corpo de resposta", content = @io.swagger.v3.oas.annotations.media.Content)

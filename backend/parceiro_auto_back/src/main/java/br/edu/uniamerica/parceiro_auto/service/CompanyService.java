@@ -13,7 +13,13 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.repository.CompanyRepository;
 import br.edu.uniamerica.parceiro_auto.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.client.RestClient;
+import br.edu.uniamerica.parceiro_auto.client.BrasilApiClient;
+import br.edu.uniamerica.parceiro_auto.client.BrasilApiCnpjResponse;
+import feign.FeignException;
+import feign.RetryableException;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -22,7 +28,7 @@ import org.springframework.web.client.RestClient;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
-    private final RestClient restClient = RestClient.create();
+    private final BrasilApiClient brasilApiClient;
 
     public Company createCompany(CompanyRequestDTO dto) {
 
@@ -175,18 +181,30 @@ public class CompanyService {
         return value;
     }
 
-    @Transactional(readOnly = true)
+    // Consulta externa nao precisa manter uma transacao de banco aberta.
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CompanyLookupResponseDTO lookupByCnpj(String cnpj) {
         String normalizedCnpj = validateCnpj(cnpj);
 
-        BrasilApiCnpjResponse response = restClient
-                .get()
-                .uri("https://brasilapi.com.br/api/cnpj/v1/{cnpj}", normalizedCnpj)
-                .retrieve()
-                .body(BrasilApiCnpjResponse.class);
+        BrasilApiCnpjResponse response;
+        try {
+            response = brasilApiClient.findByCnpj(normalizedCnpj);
+        } catch (FeignException.NotFound exception) {
+            log.warn("CNPJ {} nao encontrado na BrasilAPI", normalizedCnpj);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada na BrasilAPI");
+        } catch (RetryableException exception) {
+            // Falhas de conexao e timeout nao sao erros de preenchimento do usuario.
+            log.error("Falha de comunicacao com a BrasilAPI para CNPJ {}: {}", normalizedCnpj, exception.getClass().getSimpleName());
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "BrasilAPI indisponivel no momento");
+        } catch (FeignException exception) {
+            // Registra o status sem expor o corpo retornado pelo servico externo.
+            log.error("Falha na BrasilAPI para CNPJ {}, status {}", normalizedCnpj, exception.status());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Falha ao consultar a BrasilAPI");
+        }
 
         if (response == null) {
-            throw new IllegalArgumentException("Empresa nao encontrada na BrasilAPI");
+            log.error("BrasilAPI retornou resposta vazia para CNPJ {}", normalizedCnpj);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Resposta vazia da BrasilAPI");
         }
 
         return new CompanyLookupResponseDTO(
@@ -204,18 +222,4 @@ public class CompanyService {
         );
     }
 
-    private record BrasilApiCnpjResponse(
-            String cnpj,
-            String razao_social,
-            String nome_fantasia,
-            String cep,
-            String logradouro,
-            String numero,
-            String bairro,
-            String municipio,
-            String uf,
-            String ddd_telefone_1,
-            String email
-    ) {
-    }
 }

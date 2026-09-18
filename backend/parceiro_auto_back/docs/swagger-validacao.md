@@ -69,4 +69,37 @@ Execute `mvnw.cmd test` no diretório do back, com um JDK configurado.
 `ApiDocumentationAndValidationTest` usa H2 em memória, desabilita migrations
 nesse contexto e substitui os services por mocks. Verifica HTTP 400 sem chamadas
 aos services, regras de criação/atualização, precisão monetária, OpenAPI e Swagger UI.
-Esses testes não validam a integração com PostgreSQL nem executam suas migrations.
+Essa classe nao valida a persistencia; os testes abaixo cobrem os demais cenarios.
+
+## Ajustes de contas, consultas e integracao externa
+
+- A empresa da conta bancaria vem somente da URL. O JSON nao precisa de `companyId`.
+- A agencia exige 4 digitos e o numero da conta aceita de 4 a 13 digitos.
+- A consulta `/api/transactions/company/{companyId}/last?limit=2` aceita limite de
+  1 a 100 e ordena por data decrescente, usando o ID para desempatar. O banco aplica o limite.
+- A BrasilAPI e consultada por `BrasilApiClient`, com OpenFeign e Spring Cloud 2025.1.3.
+  A compatibilidade com Boot 4.1 esta em https://spring.io/projects/spring-cloud/.
+- `@EnableFeignClients` habilita os clientes; `@FeignClient` define o servico externo.
+  A URL fica em `integrations.brasil-api.url`, com timeout de conexao de 3s e leitura de 5s.
+- A consulta externa nao abre transacao de banco. Ausencia retorna 404, falha HTTP
+  externa retorna 502 e falha de comunicacao retorna 503, com logs sem o corpo externo.
+
+`TransactionServiceTest` verifica vinculos e limites. `BrasilApiIntegrationTest`
+usa um servidor HTTP local para testar o Feign, incluindo sucesso, erro e timeout.
+Nenhum desses testes depende da BrasilAPI real.
+
+Para verificar PostgreSQL, informe um banco separado de testes:
+
+```powershell
+./mvnw.cmd test "-Dtest=PostgresPersistenceTest" "-Dtest.postgres.url=jdbc:postgresql://localhost:55439/postgres" "-Dtest.postgres.user=postgres"
+```
+
+Se houver senha, informe `-Dtest.postgres.password` no seu ambiente de testes.
+O teste cria um schema exclusivo `test_*`, aplica V1, V2 e V3 e valida as entidades.
+Tambem confere que uma nova chamada ao Flyway nao reaplica as migrations, verifica
+ordenacao e limite, rejeita vinculos de outra empresa e verifica rollback do saldo.
+O schema permanece no banco de teste para inspecao. Sem `test.postgres.url`, essa
+classe e ignorada. Nao use o banco de trabalho para esse comando.
+
+As migrations existentes foram preservadas. Dados de exemplo sao criados somente
+pelos testes, sem popular o banco normal da aplicacao.

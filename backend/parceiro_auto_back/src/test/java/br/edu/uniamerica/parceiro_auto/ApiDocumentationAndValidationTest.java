@@ -1,6 +1,8 @@
 package br.edu.uniamerica.parceiro_auto;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionRequestDTO;
+import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
+import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
 import br.edu.uniamerica.parceiro_auto.service.*;
@@ -17,9 +19,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -41,6 +45,41 @@ class ApiDocumentationAndValidationTest {
     @MockitoBean BankAccountService bankAccountService;
     @MockitoBean TransactionService transactionService;
     @MockitoBean TransactionCategoryService transactionCategoryService;
+    @MockitoBean RecurrenceRuleService recurrenceRuleService;
+
+    // A empresa da conta vem da URL, sem precisar repetir o campo no JSON.
+    @Test
+    void createsAccountWithoutCompanyInBody() throws Exception {
+        Company company = new Company();
+        company.setId(1L);
+        BankAccount account = new BankAccount();
+        account.setId(2L);
+        account.setCompany(company);
+        when(companyService.findById(1L)).thenReturn(Optional.of(company));
+        when(bankAccountService.createBankAccount(company, "Banco", "1234", "123456", "CORRENTE", false))
+                .thenReturn(account);
+
+        mvc.perform(post("/api/bank-accounts/company/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"bankName":"Banco","branch":"1234","accountNumber":"123456",
+                                 "accountType":"CORRENTE","defaultAccount":false}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.dados.companyId").value(1));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"12,123456", "12345,123456", "abcd,123456", "1234,123", "1234,12345678901234"})
+    void rejectsAccountFormatsBeforeServices(String branch, String accountNumber) throws Exception {
+        String body = """
+                {"bankName":"Banco","branch":"%s","accountNumber":"%s","accountType":"CORRENTE"}
+                """.formatted(branch, accountNumber);
+        mvc.perform(post("/api/bank-accounts/company/1")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(companyService, bankAccountService);
+    }
 
     @ParameterizedTest
     @CsvSource({

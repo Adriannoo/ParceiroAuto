@@ -116,9 +116,10 @@ public class BankAccountService {
 
         bankAccount.setDefaultAccount(true);
 
-        bankAccountRepository.save(bankAccount);
+        // Salva uma unica vez e retorna o resultado da persistencia.
+        BankAccount saved = bankAccountRepository.save(bankAccount);
         log.info("Conta bancária id:({}) definida como padrão para a empresa id:({}) com sucesso!", bankAccount.getId(), company.getId());
-        return bankAccountRepository.save(bankAccount);
+        return saved;
     }
 
     // Exclui uma conta bancária da empresa.

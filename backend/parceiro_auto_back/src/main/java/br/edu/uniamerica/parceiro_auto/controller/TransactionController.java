@@ -14,6 +14,8 @@ import br.edu.uniamerica.parceiro_auto.service.RecurrenceRuleService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionCategoryService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
@@ -116,7 +118,10 @@ public class TransactionController {
 
     @GetMapping("/company/{companyId}/last")
     @Operation(summary = "Listar movimentações da empresa com limite")
-    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findLastByCompany(@PathVariable Long companyId, @RequestParam int limit) {
+    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findLastByCompany(
+            @PathVariable Long companyId,
+            @Parameter(description = "Quantidade de movimentacoes, entre 1 e 100", schema = @Schema(minimum = "1", maximum = "100"))
+            @RequestParam int limit) {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
 
