@@ -1,4 +1,4 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
@@ -6,7 +6,6 @@ import { Layout } from './components/layout/layout';
 
 import { Dashboard } from './pages/dashboard/dashboard';
 import { Reports } from './pages/reports/reports';
-import { AccessManagement } from './pages/access-management/access-management';
 
 import { CompanyList } from './pages/companies/company-list/company-list';
 import { CompanyForm } from './pages/companies/company-form/company-form';
@@ -63,7 +62,6 @@ export const routes: Routes = [
         ],
       },
       { path: 'reports', component: Reports },
-      { path: 'access-management', component: AccessManagement },
     ],
   },
 ];

@@ -1,42 +1,210 @@
-<h2 class="mb-4">Relatorios</h2>
+﻿<div class="page-header">
+  <div>
+    <h2 class="mb-1">Relatórios</h2>
+    <small class="text-muted">Relatório financeiro gerado a partir das movimentações cadastradas.</small>
+  </div>
+
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="filteredTransactions().length === 0"
+    (click)="openExportModal()">
+    Exportar XLS
+  </button>
+</div>
+
+<div class="filters card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label" for="company">Empresa</label>
+        <select id="company" class="form-select" [ngModel]="companyId()" (ngModelChange)="onCompanyChange($event)">
+          <option value="all">Todas as empresas</option>
+          @for (company of companies(); track company.id) {
+            <option [ngValue]="company.id">{{ company.tradeName }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label" for="type">Tipo</label>
+        <select id="type" class="form-select" [ngModel]="type()" (ngModelChange)="onTypeChange($event)">
+          <option value="all">Todos</option>
+          <option value="ENTRADA">Entradas</option>
+          <option value="SAIDA">Saídas</option>
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label" for="category">Categoria</label>
+        <select id="category" class="form-select" [ngModel]="categoryId()" (ngModelChange)="categoryId.set($event)">
+          <option value="all">Todas as categorias</option>
+          @for (category of filteredCategories(); track category.id) {
+            <option [ngValue]="category.id">{{ category.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label" for="account">Conta</label>
+        <select id="account" class="form-select" [ngModel]="bankAccountId()" (ngModelChange)="bankAccountId.set($event)">
+          <option value="all">Todas as contas</option>
+          @for (account of filteredBankAccounts(); track account.id) {
+            <option [ngValue]="account.id">{{ accountName(account.id) }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label" for="startDate">De</label>
+        <input id="startDate" type="date" class="form-control" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" />
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label" for="endDate">Até</label>
+        <input id="endDate" type="date" class="form-control" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" />
+      </div>
+
+      <div class="col-md-5">
+        <label class="form-label" for="search">Buscar</label>
+        <input
+          id="search"
+          type="search"
+          class="form-control"
+          placeholder="Descrição, empresa, categoria, conta ou forma"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)" />
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end justify-content-md-end">
+        <button type="button" class="btn btn-outline-secondary w-100" (click)="clearFilters()">Limpar filtros</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="row g-3 mb-3">
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Card 1</h5>
-      </div>
+  <div class="col-md-3">
+    <div class="summary-card card">
+      <span>Entradas</span>
+      <strong class="income">{{ formatCurrency(totalIncome()) }}</strong>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Card 2</h5>
-      </div>
+  <div class="col-md-3">
+    <div class="summary-card card">
+      <span>Saídas</span>
+      <strong class="expense">{{ formatCurrency(totalExpense()) }}</strong>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Card 3</h5>
-      </div>
+  <div class="col-md-3">
+    <div class="summary-card card">
+      <span>Saldo</span>
+      <strong [class.income]="balance() >= 0" [class.expense]="balance() < 0">{{ formatCurrency(balance()) }}</strong>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="summary-card card">
+      <span>Movimentações</span>
+      <strong>{{ filteredTransactions().length }}</strong>
     </div>
   </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-md-6">
-    <div class="card" style="height: 250px;">
-      <div class="card-body">
-        <h5 class="card-title">Card grande 1</h5>
+<div class="card">
+  <div class="card-body p-0">
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Carregando</span>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card" style="height: 250px;">
-      <div class="card-body">
-        <h5 class="card-title">Card grande 2</h5>
+    } @else if (filteredTransactions().length === 0) {
+      <div class="empty-state">
+        Nenhuma movimentação encontrada para os filtros selecionados.
       </div>
-    </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Empresa</th>
+              <th>Categoria</th>
+              <th>Conta</th>
+              <th>Tipo</th>
+              <th>Forma</th>
+              <th class="text-end">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (transaction of filteredTransactions(); track transaction.id) {
+              <tr>
+                <td class="text-nowrap">{{ formatDate(transaction.date) }}</td>
+                <td>{{ transaction.description }}</td>
+                <td>{{ companyName(transaction.companyId) }}</td>
+                <td>{{ categoryName(transaction.transactionCategoryId) }}</td>
+                <td>{{ accountName(transaction.bankAccountId) }}</td>
+                <td>
+                  <span class="tag" [class.income-tag]="transaction.type === 'ENTRADA'" [class.expense-tag]="transaction.type === 'SAIDA'">
+                    {{ transactionTypeLabel(transaction.type) }}
+                  </span>
+                </td>
+                <td>{{ paymentMethodLabel(transaction) }}</td>
+                <td class="text-end text-nowrap" [class.income]="transaction.type === 'ENTRADA'" [class.expense]="transaction.type === 'SAIDA'">
+                  {{ transaction.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(transaction.value) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   </div>
 </div>
+
+@if (exportModalOpen()) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Exportar relatório</h5>
+          <button type="button" class="btn-close" (click)="closeExportModal()"></button>
+        </div>
+
+        <div class="modal-body">
+          <p class="text-muted mb-3">
+            Escolha as colunas que devem aparecer no arquivo XLS. Serão exportadas as {{ filteredTransactions().length }} movimentações filtradas na tela.
+          </p>
+
+          <div class="column-actions mb-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllColumns(true)">Marcar todas</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllColumns(false)">Desmarcar todas</button>
+          </div>
+
+          <div class="column-list">
+            @for (column of columns; track column.key) {
+              <label class="column-option">
+                <input type="checkbox" [(ngModel)]="column.selected" />
+                {{ column.label }}
+              </label>
+            }
+          </div>
+
+          @if (selectedColumns().length === 0) {
+            <div class="alert alert-warning mt-3 mb-0">Selecione pelo menos uma coluna para exportar.</div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeExportModal()">Cancelar</button>
+          <button type="button" class="btn btn-primary" [disabled]="selectedColumns().length === 0" (click)="exportXls()">
+            Baixar XLS
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
