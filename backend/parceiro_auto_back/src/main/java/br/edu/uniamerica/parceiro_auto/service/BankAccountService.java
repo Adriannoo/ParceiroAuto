@@ -2,6 +2,8 @@ package br.edu.uniamerica.parceiro_auto.service;
 
 import java.util.List;
 
+import br.edu.uniamerica.parceiro_auto.exception.BusinessRuleException;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +49,7 @@ public class BankAccountService {
 
         if (existingAccount != null) {
             log.warn("Conta duplicada!");
-            throw new IllegalArgumentException(
+            throw new BusinessRuleException(
                     "Já existe uma conta com esse banco, agência e número para essa empresa"
             );
         }
@@ -80,7 +82,7 @@ public class BankAccountService {
 
         return bankAccountRepository.findById(id)
                 .orElseThrow(
-                        () -> new IllegalArgumentException("Conta bancaria nao encontrada!")
+                        () -> new ResourceNotFoundException("Conta bancaria nao encontrada!")
                 );
     }
 
@@ -169,7 +171,7 @@ public class BankAccountService {
         if (existingAccount != null
                 && !existingAccount.getId().equals(bankAccount.getId())) {
             log.warn("Conta duplicada!");
-            throw new IllegalArgumentException(
+            throw new BusinessRuleException(
                     "Já existe uma conta com esse banco, agência e número para essa empresa"
             );
         }

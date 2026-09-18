@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyLookupResponseDTO;
+import br.edu.uniamerica.parceiro_auto.exception.BusinessRuleException;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,8 @@ import feign.RetryableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Service
@@ -39,7 +43,7 @@ public class CompanyService {
 
         if (existingCompany != null) {
             log.warn("CNPJ duplicado {}", normalizedCnpj);
-            throw new IllegalArgumentException("Ja existe uma empresa com esse CNPJ");
+            throw new BusinessRuleException("Ja existe uma empresa com esse CNPJ");
         }
 
         Company company = new Company();
@@ -86,7 +90,7 @@ public class CompanyService {
 
         if (existingCompany != null && !existingCompany.getId().equals(company.getId())) {
             log.warn("CNPJ {} com id: {} já pertence a outra empresa", normalizedCnpj, company.getId());
-            throw new IllegalArgumentException("Ja existe uma empresa com esse CNPJ");
+            throw new BusinessRuleException("Ja existe uma empresa com esse CNPJ");
         }
 
         applyCompanyData(company, dto, normalizedCnpj);
@@ -99,7 +103,7 @@ public class CompanyService {
         Company company = findById(id)
                 .orElseThrow(() -> {
                     log.warn("Empresa com id({}) não encontrada para exclusão", id);
-                    return new IllegalArgumentException("Empresa não encontrada");
+                    return new ResourceNotFoundException("Empresa não encontrada");
                 });
 
         companyRepository.delete(company);

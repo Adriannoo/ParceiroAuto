@@ -6,6 +6,7 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyRequestDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.CompanyMapper;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 
 import jakarta.validation.Valid;
@@ -14,7 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -60,9 +60,7 @@ public class CompanyController {
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id) {
         Company company = companyService.findById(id)
                 .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND, "Empresa nao encontrada"
-                        )
+                        () -> new ResourceNotFoundException("Empresa nao encontrada")
                 );
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -80,7 +78,7 @@ public class CompanyController {
         // Como o "findByCnpj" nao esta usando optional no repository, nao fazemos tratamento de retorno Optional com orElseThrow
         // Por isso o tratamento precisa ser manual
         if (company == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada");
+            throw new ResourceNotFoundException("Empresa nao encontrada");
         }
 
         return ResponseEntity.ok(new ApiResponse<>("Empresa encontrada com sucesso!", CompanyMapper.toResponseDTO(company)));
@@ -112,9 +110,7 @@ public class CompanyController {
     public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequestDTO dto) {
         Company company = companyService.findById(id)
                 .orElseThrow(
-                        () -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND, "Empresa nao encontrada"
-                        )
+                        () -> new ResourceNotFoundException("Empresa nao encontrada")
                 );
 
             Company updated = companyService.updateCompany(company, dto);
