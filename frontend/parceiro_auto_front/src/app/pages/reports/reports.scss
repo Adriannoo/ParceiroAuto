@@ -1,16 +1,109 @@
-.card {
-  background-color: #f2f2f2;
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s ease;
+﻿$azul: #2f7de1;
+$verde: #0f6e56;
+$vermelho: #a32d2d;
+$texto-fraco: #6b7280;
+$borda: #e5e7eb;
 
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.filters .card-body {
+  padding: 16px;
+}
+
+.summary-card {
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: $texto-fraco;
+    font-size: 0.85rem;
+  }
+
+  strong {
+    font-size: 1.25rem;
   }
 }
 
-.card-title {
+.table > :not(caption) > * > * {
+  padding: 13px 16px;
+}
+
+thead th {
   font-weight: 600;
-  color: #1e73d8;
+  font-size: 0.85rem;
+  color: #4a4a4a;
+}
+
+.empty-state {
+  padding: 40px 16px;
+  color: $texto-fraco;
+  text-align: center;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background-color: #f1f2f4;
+  color: #444441;
+}
+
+.income,
+.income-tag {
+  color: $verde;
+}
+
+.expense,
+.expense-tag {
+  color: $vermelho;
+}
+
+.income-tag {
+  background-color: #e1f5ee;
+}
+
+.expense-tag {
+  background-color: #fde8e8;
+}
+
+.column-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.column-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.column-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid $borda;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 576px) {
+  .column-list {
+    grid-template-columns: 1fr;
+  }
 }
