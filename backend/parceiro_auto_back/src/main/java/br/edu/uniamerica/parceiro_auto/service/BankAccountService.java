@@ -2,6 +2,7 @@ package br.edu.uniamerica.parceiro_auto.service;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.repository.BankAccountRepository;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -26,7 +28,7 @@ public class BankAccountService {
             String accountType,
             boolean defaultAccount
     ) {
-
+        log.info("Criando conta bancária para empresa id({}) conta:{} agencia:{}", company!=null? company.getId() : null, bankName, branch); // (usa o company bruto, antes da validação, então precisa do ?: pra não quebrar se vier nulo
         validateCompany(company);
 
         String normalizedBankName = validateBankName(bankName);
@@ -44,6 +46,7 @@ public class BankAccountService {
                 );
 
         if (existingAccount != null) {
+            log.warn("Conta duplicada!");
             throw new IllegalArgumentException(
                     "Já existe uma conta com esse banco, agência e número para essa empresa"
             );
@@ -63,7 +66,9 @@ public class BankAccountService {
             clearDefaultByCompany(company);
         }
 
-        return bankAccountRepository.save(bankAccount);
+        BankAccount bankAccountsaved = bankAccountRepository.save(bankAccount);
+        log.info("Conta cadastrada com sucesso!");
+        return bankAccountsaved;
     }
 
     // Procura uma conta bancaria por ID
@@ -111,6 +116,8 @@ public class BankAccountService {
 
         bankAccount.setDefaultAccount(true);
 
+        bankAccountRepository.save(bankAccount);
+        log.info("Conta bancária id:({}) definida como padrão para a empresa id:({}) com sucesso!", bankAccount.getId(), company.getId());
         return bankAccountRepository.save(bankAccount);
     }
 
@@ -125,6 +132,7 @@ public class BankAccountService {
         validateAccountBelongsToCompany(company, bankAccount);
 
         bankAccountRepository.delete(bankAccount);
+        log.info("Conta bancária id({}) deletada com sucesso da empresa id:({})", bankAccount.getId(), company.getId());
     }
 
     // Atualiza os dados de uma conta bancária da empresa.
@@ -159,7 +167,7 @@ public class BankAccountService {
         // Se já existe uma conta com os mesmos dados e não é a mesma conta que está sendo atualizada, lança uma exceção.
         if (existingAccount != null
                 && !existingAccount.getId().equals(bankAccount.getId())) {
-
+            log.warn("Conta duplicada!");
             throw new IllegalArgumentException(
                     "Já existe uma conta com esse banco, agência e número para essa empresa"
             );
@@ -176,7 +184,9 @@ public class BankAccountService {
         bankAccount.setAccountType(normalizedAccountType);
         bankAccount.setDefaultAccount(defaultAccount);
 
-        return bankAccountRepository.save(bankAccount);
+        BankAccount saved = bankAccountRepository.save(bankAccount);
+        log.info("Dados da conta bancária com id:({}) atualizados com sucesso!", saved.getId());
+        return saved;
     }
 
     // Remove a definição de conta padrão das outras contas da empresa.
@@ -226,7 +236,7 @@ public class BankAccountService {
                 || !bankAccount.getCompany()
                         .getId()
                         .equals(company.getId())) {
-
+            log.warn("Conta id:({}) não pertence a empresa com id:({})", bankAccount.getId(), company.getId());
             throw new IllegalArgumentException(
                     "A conta bancária não pertence a essa empresa"
             );

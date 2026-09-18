@@ -9,6 +9,8 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Tag(name = "Contas bancárias")
 @RestController
 @RequestMapping("api/bank-accounts")
 public class BankAccountController {
@@ -25,9 +28,13 @@ public class BankAccountController {
         this.bankAccountService = bankAccountService;
         this.companyService = companyService;
     }
-    // Endpoint para criar uma nova conta bancaria para uma empresa
-    // POST localhost:8080/api/bank-accounts/company/{companyId}
+
+    // Endpoint para criar uma nova conta bancaria
+    // Queremos devolver 201 CREATED, que e o status para criacao.
+    // POST localhost:8080/api/bank-accounts
     @PostMapping("/company/{companyId}")
+    @Operation(summary = "Cadastrar conta bancária")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> create(
             @PathVariable Long companyId,
             @Valid @RequestBody BankAccountRequestDTO dto
@@ -50,6 +57,7 @@ public class BankAccountController {
     // Endpoint para listar todas as contas bancarias de uma empresa
     // GET localhost:8080/api/bank-accounts/company/{companyId}
     @GetMapping("/company/{companyId}")
+    @Operation(summary = "Listar contas de uma empresa")
     public ResponseEntity<ApiResponse<List<BankAccountResponseDTO>>> findByCompany(@PathVariable Long companyId) {
         Company company = findCompanyOrThrow(companyId);
 
@@ -64,6 +72,7 @@ public class BankAccountController {
     // Endpoint para buscar a conta padrao de uma empresa
     // GET localhost:8080/api/bank-accounts/company/{companyId}/default
     @GetMapping("/company/{companyId}/default")
+    @Operation(summary = "Buscar conta padrão da empresa")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findByDefault(@PathVariable Long companyId) {
         Company company = findCompanyOrThrow(companyId);
         BankAccount bankAccount = bankAccountService.findDefaultByCompany(company);
@@ -90,8 +99,10 @@ public class BankAccountController {
     }
 
     // Endpoint para definir uma conta bancaria como padrao
-    // PATCH localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}/default
+    // Queremos devolver 200 OK, status generico para sucesso
+    // PATCH localhost:8080/api/bank-accounts/{id}/default?companyId
     @PatchMapping("/company/{companyId}/accounts/{id}/default")
+    @Operation(summary = "Definir conta padrão")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> defineDefault(
             @PathVariable Long companyId,
             @PathVariable Long id
@@ -105,8 +116,10 @@ public class BankAccountController {
     }
 
     // Endpoint para atualizar uma conta bancaria
-    // PUT localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
+    // Queremos devolver 200 OK, status generico para sucesso
+    // PUT localhost:8080/api/bank-accounts/{id}
     @PutMapping("/company/{companyId}/accounts/{id}")
+    @Operation(summary = "Atualizar conta bancária")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(
             @PathVariable Long companyId,
             @PathVariable Long id,
@@ -129,8 +142,11 @@ public class BankAccountController {
     }
 
     // Endpoint para deletar uma conta bancaria
-    // DELETE localhost:8080/api/bank-accounts/company/{companyId}/accounts/{id}
+    // Queremos devolver 200 OK, status generico para sucesso
+    // DELETE localhost:8080/api/bank-accounts/{id}
     @DeleteMapping("/company/{companyId}/accounts/{id}")
+    @Operation(summary = "Excluir conta bancária")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Excluído com sucesso, sem corpo de resposta", content = @io.swagger.v3.oas.annotations.media.Content)
     public ResponseEntity<Void> delete(
             @PathVariable Long companyId,
             @PathVariable Long id

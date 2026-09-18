@@ -27,3 +27,7 @@ frontend/node_modules/
 
 # Local-only Docker/PostgreSQL setup
 docker-compose.local.yml
+
+
+# IntelliJ IDEA
+.idea/

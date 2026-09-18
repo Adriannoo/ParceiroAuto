@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
 import br.edu.uniamerica.parceiro_auto.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -69,8 +71,14 @@ public class TransactionService {
                 date
         );
 
+        log.info(
+                "Criando transacao empresa id:({}) conta id:({}) tipo:({}) valor:({})",
+                company.getId(), bankAccount.getId(), type, value
+        );
+
         // Verifica se a categoria corresponde ao tipo da transação.
         if (transactionCategory.getType() != type) {
+            log.warn("Categoria id:({}) nao corresponde ao tipo:({}) da transacao", transactionCategory.getId(), type);
             throw new IllegalArgumentException(
                     "A categoria selecionada não corresponde ao tipo da transação"
             );
@@ -90,7 +98,9 @@ public class TransactionService {
         transaction.setMethod(method);
         transaction.setDate(date);
 
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+        log.info("Transacao id:({}) criada com sucesso", saved.getId());
+        return saved;
     }
 
     // Procura a transacao pelo ID
@@ -197,8 +207,11 @@ public class TransactionService {
                 newDate
         );
 
+        log.info("Atualizando transacao id:({})", transaction.getId());
+
         // Verifica se a nova categoria corresponde ao novo tipo.
         if (newCategory.getType() != newType) {
+            log.warn("Categoria id:({}) nao corresponde ao tipo:({}) da transacao", newCategory.getId(), newType);
             throw new IllegalArgumentException(
                     "A categoria selecionada não corresponde ao tipo da transação"
             );
@@ -220,7 +233,9 @@ public class TransactionService {
         transaction.setMethod(newMethod);
         transaction.setDate(newDate);
 
-        return transactionRepository.save(transaction);
+        Transaction saved = transactionRepository.save(transaction);
+        log.info("Transacao id:({}) atualizada com sucesso", saved.getId());
+        return saved;
     }
 
     // Deleta uma transação e reverte o efeito dela no saldo da conta.
@@ -232,9 +247,12 @@ public class TransactionService {
             );
         }
 
+        log.info("Deletando transacao id:({})", transaction.getId());
+
         reverseBalanceEffect(transaction);
 
         transactionRepository.delete(transaction);
+        log.info("Transacao id:({}) deletada com sucesso", transaction.getId());
     }
 
     //Valida se os campos obrigatórios foram preenchidos corretamente.
