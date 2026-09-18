@@ -2,6 +2,7 @@ package br.edu.uniamerica.parceiro_auto.service;
 
 import java.util.Optional;
 
+import br.edu.uniamerica.parceiro_auto.exception.BusinessRuleException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,7 @@ public class UserService {
 
         if (existingUser != null) {
             log.warn("Login:({}) ja esta em uso", normalizedLogin);
-            throw new IllegalArgumentException(
+            throw new BusinessRuleException(
                     "Já existe um usuário com esse login"
             );
         }

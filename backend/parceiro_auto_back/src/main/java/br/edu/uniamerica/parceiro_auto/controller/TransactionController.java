@@ -8,6 +8,7 @@ import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.Transaction;
 import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionCategoryService;
@@ -19,7 +20,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class TransactionController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
     public ResponseEntity<ApiResponse<TransactionResponseDTO>> create(@Validated(TransactionRequestDTO.Create.class) @RequestBody TransactionRequestDTO dto) {
         Company company = companyService.findById(dto.companyId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
         BankAccount bankAccount = bankAccountService.findById(dto.bankAccountId());
         TransactionCategory category = transactionCategoryService.findById(dto.transactionCategoryId());
 
@@ -77,7 +77,7 @@ public class TransactionController {
     @Operation(summary = "Listar movimentações de uma empresa")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByCompany(@PathVariable Long companyId) {
         Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
 
         List<TransactionResponseDTO> transacoes = transactionService.findByCompany(company).stream()
                 .map(TransactionMapper::toResponseDTO)
@@ -90,7 +90,7 @@ public class TransactionController {
     @Operation(summary = "Listar movimentações da empresa com limite")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findLastByCompany(@PathVariable Long companyId, @RequestParam int limit) {
         Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
 
         List<TransactionResponseDTO> transacoes = transactionService.findLastByCompany(company, limit).stream()
                 .map(TransactionMapper::toResponseDTO)

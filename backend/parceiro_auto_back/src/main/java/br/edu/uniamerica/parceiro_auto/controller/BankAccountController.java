@@ -6,6 +6,7 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.BankAccountResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.BankAccountMapper;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import jakarta.validation.Valid;
@@ -78,7 +79,7 @@ public class BankAccountController {
         BankAccount bankAccount = bankAccountService.findDefaultByCompany(company);
 
         if (bankAccount == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma conta padrao encontrada!");
+            throw new ResourceNotFoundException("Nenhuma conta padrao encontrada!");
         }
 
         return ResponseEntity.ok(new ApiResponse<>("Conta padrao encontrada com sucesso!", BankAccountMapper.toResponseDTO(bankAccount)));
@@ -161,7 +162,7 @@ public class BankAccountController {
 
     private Company findCompanyOrThrow(Long companyId) {
         return companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada!"));
     }
 
     private void validateAccountBelongsToCompany(Company company, BankAccount bankAccount) {

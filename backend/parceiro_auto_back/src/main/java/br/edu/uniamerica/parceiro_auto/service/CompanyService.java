@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyLookupResponseDTO;
+import br.edu.uniamerica.parceiro_auto.exception.BusinessRuleException;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import br.edu.uniamerica.parceiro_auto.repository.CompanyRepository;
 import br.edu.uniamerica.parceiro_auto.util.CnpjValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Service
@@ -33,7 +36,7 @@ public class CompanyService {
 
         if (existingCompany != null) {
             log.warn("CNPJ duplicado {}", normalizedCnpj);
-            throw new IllegalArgumentException("Ja existe uma empresa com esse CNPJ");
+            throw new BusinessRuleException("Ja existe uma empresa com esse CNPJ");
         }
 
         Company company = new Company();
@@ -80,7 +83,7 @@ public class CompanyService {
 
         if (existingCompany != null && !existingCompany.getId().equals(company.getId())) {
             log.warn("CNPJ {} com id: {} já pertence a outra empresa", normalizedCnpj, company.getId());
-            throw new IllegalArgumentException("Ja existe uma empresa com esse CNPJ");
+            throw new BusinessRuleException("Ja existe uma empresa com esse CNPJ");
         }
 
         applyCompanyData(company, dto, normalizedCnpj);
@@ -93,7 +96,7 @@ public class CompanyService {
         Company company = findById(id)
                 .orElseThrow(() -> {
                     log.warn("Empresa com id({}) não encontrada para exclusão", id);
-                    return new IllegalArgumentException("Empresa não encontrada");
+                    return new ResourceNotFoundException("Empresa não encontrada");
                 });
 
         companyRepository.delete(company);
@@ -179,14 +182,21 @@ public class CompanyService {
     public CompanyLookupResponseDTO lookupByCnpj(String cnpj) {
         String normalizedCnpj = validateCnpj(cnpj);
 
-        BrasilApiCnpjResponse response = restClient
-                .get()
-                .uri("https://brasilapi.com.br/api/cnpj/v1/{cnpj}", normalizedCnpj)
-                .retrieve()
-                .body(BrasilApiCnpjResponse.class);
+        BrasilApiCnpjResponse response;
+        try {
+            response = restClient
+                    .get()
+                    .uri("https://brasilapi.com.br/api/cnpj/v1/{cnpj}", normalizedCnpj)
+                    .retrieve()
+                    .body(BrasilApiCnpjResponse.class);
+        } catch (RestClientException ex) {
+            log.error("Falha ao consultar a BrasilAPI para o CNPJ {}", normalizedCnpj, ex);
+            throw new BusinessRuleException("Nao foi possivel consultar os dados do CNPJ no momento");
+        }
 
         if (response == null) {
-            throw new IllegalArgumentException("Empresa nao encontrada na BrasilAPI");
+            log.warn("CNPJ {} nao encontrado na BrasilAPI", normalizedCnpj);
+            throw new ResourceNotFoundException("Empresa nao encontrada na BrasilAPI");
         }
 
         return new CompanyLookupResponseDTO(

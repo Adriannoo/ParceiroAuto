@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -112,7 +113,7 @@ public class TransactionService {
 
         return transactionRepository.findById(id)
                 .orElseThrow(
-                        () -> new IllegalArgumentException("Transacao nao encontrada!")
+                        () -> new ResourceNotFoundException("Transacao nao encontrada!")
                 );
     }
 

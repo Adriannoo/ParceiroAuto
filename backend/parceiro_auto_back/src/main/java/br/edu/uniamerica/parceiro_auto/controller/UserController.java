@@ -5,6 +5,7 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.UserRequestDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.UserResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.UserMapper;
 import br.edu.uniamerica.parceiro_auto.entity.User;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -60,7 +61,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserResponseDTO>> findById(@PathVariable Long id) {
         User user = userService.findById(id)
                 .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao econtrado!")
+                        () -> new ResourceNotFoundException("Usuario nao econtrado!")
                 );
 
         return ResponseEntity.ok(new ApiResponse<>("Usuario encontrado com sucesso!", UserMapper.toResponseDTO(user)));
@@ -75,7 +76,7 @@ public class UserController {
         User user = userService.findByLogin(login);
 
         if(user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado!");
+            throw new ResourceNotFoundException("Usuario nao encontrado!");
         }
 
         return ResponseEntity.ok(new ApiResponse<>("Usuario encontrado com sucesso!", UserMapper.toResponseDTO(user)));
