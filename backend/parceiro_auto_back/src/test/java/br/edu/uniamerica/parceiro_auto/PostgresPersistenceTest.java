@@ -22,7 +22,8 @@ import static org.assertj.core.api.Assertions.*;
 
 // Executa somente quando um banco separado de teste for informado pelo terminal.
 @EnabledIfSystemProperty(named = "test.postgres.url", matches = ".+")
-@SpringBootTest(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate"})
+@SpringBootTest(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate",
+        "integrations.brasil-api.url=http://127.0.0.1:1"})
 class PostgresPersistenceTest {
     private static final String SCHEMA = "test_" + UUID.randomUUID().toString().replace("-", "");
     @Autowired Flyway flyway;

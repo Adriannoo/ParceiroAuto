@@ -20,7 +20,7 @@ No back, `controller` recebe as requisições, `service` concentra as regras de 
 
 ## Como executar
 
-**Back:** configure um JDK compatível com Java 21, mantenha o PostgreSQL disponível e ajuste a conexão em `backend/parceiro_auto_back/src/main/resources/application.properties` para seu ambiente. Recarregue o Maven no IntelliJ e execute `Projeto4periodoApplication`.
+**Back:** configure um JDK compatível com Java 21 e mantenha o PostgreSQL disponível. Copie `application.properties.example` para `application.properties` em `backend/parceiro_auto_back/src/main/resources` e ajuste a conexão para seu ambiente. O arquivo local não é versionado. Recarregue o Maven no IntelliJ e execute `Projeto4periodoApplication`.
 
 Com `JAVA_HOME` configurado, também é possível iniciar pelo terminal, na pasta do back:
 
@@ -114,4 +114,4 @@ Na pasta do back, execute `./mvnw.cmd test`. Os testes cobrem validações e doc
 
 `PostgresPersistenceTest` verifica migrations, consultas e rollback em PostgreSQL. Essa classe só executa quando `test.postgres.url` é informado para um banco de testes separado; sem essa configuração, ela é ignorada.
 
-Mais detalhes no [guia de Swagger e validação](backend/parceiro_auto_back/docs/swagger-validacao.md).
+Mais detalhes no [guia de Swagger e validação](docs/swagger-validacao.md).

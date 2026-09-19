@@ -7,12 +7,11 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.TransactionMapper;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.Transaction;
-import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import br.edu.uniamerica.parceiro_auto.service.RecurrenceRuleService;
-import br.edu.uniamerica.parceiro_auto.service.TransactionCategoryService;
+import br.edu.uniamerica.parceiro_auto.service.TransactionApplicationService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,7 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.time.LocalDate;
 
 // Agrupa os endpoints de movimentacoes na documentacao do Swagger.
 @Tag(name = "Movimentações")
@@ -35,7 +33,7 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final CompanyService companyService;
     private final BankAccountService bankAccountService;
-    private final TransactionCategoryService transactionCategoryService;
+    private final TransactionApplicationService transactionApplicationService;
     private final RecurrenceRuleService recurrenceRuleService;
 
     // Recebe os services usados nas movimentacoes, nos vinculos e nas regras de recorrencia.
@@ -43,13 +41,13 @@ public class TransactionController {
             TransactionService transactionService,
             CompanyService companyService,
             BankAccountService bankAccountService,
-            TransactionCategoryService transactionCategoryService,
+            TransactionApplicationService transactionApplicationService,
             RecurrenceRuleService recurrenceRuleService
     ) {
         this.transactionService = transactionService;
         this.companyService = companyService;
         this.bankAccountService = bankAccountService;
-        this.transactionCategoryService = transactionCategoryService;
+        this.transactionApplicationService = transactionApplicationService;
         this.recurrenceRuleService = recurrenceRuleService;
     }
 
@@ -88,23 +86,9 @@ public class TransactionController {
     @Operation(summary = "Criar movimentação")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
     public ResponseEntity<ApiResponse<TransactionResponseDTO>> create(@Validated(TransactionRequestDTO.Create.class) @RequestBody TransactionRequestDTO dto) {
-        validateRecurrence(dto.date() == null ? LocalDate.now() : dto.date(), dto);
-
-        Company company = companyService.findById(dto.companyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
-        BankAccount bankAccount = bankAccountService.findById(dto.bankAccountId());
-        TransactionCategory category = transactionCategoryService.findById(dto.transactionCategoryId());
-
-        // Usa a data recebida ou deixa o service assumir a data atual quando ela nao vier.
-        Transaction transaction = dto.date() != null
-                ? transactionService.createTransaction(company, bankAccount, category, dto.type(), dto.description(), dto.value(), dto.method(), dto.date())
-                : transactionService.createTransaction(company, bankAccount, category, dto.type(), dto.description(), dto.value(), dto.method());
-
-        // Apos criar a movimentacao, configura a recorrencia conforme os dados recebidos.
-        recurrenceRuleService.saveForTransaction(transaction, dto.recurrenceFrequency(), dto.recurrenceEndDate());
-
+        // O service salva movimentacao, saldo e recorrencia como uma unica operacao.
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>("Transacao criada com sucesso!", TransactionMapper.toResponseDTO(transaction, recurrenceRuleService.findByTransaction(transaction))));
+                .body(new ApiResponse<>("Transacao criada com sucesso!", transactionApplicationService.create(dto)));
     }
 
     // Endpoint para listar as movimentacoes de uma conta bancaria
@@ -165,41 +149,8 @@ public class TransactionController {
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar movimentação")
     public ResponseEntity<ApiResponse<TransactionResponseDTO>> update(@PathVariable Long id, @Valid @RequestBody TransactionRequestDTO dto) {
-        Transaction transaction = transactionService.findById(id);
-        validateRecurrence(dto.date() == null ? transaction.getDate() : dto.date(), dto);
-
-        BankAccount bankAccount = bankAccountService.findById(dto.bankAccountId());
-        TransactionCategory category = transactionCategoryService.findById(dto.transactionCategoryId());
-
-        // Atualiza a data quando informada; caso contrario, preserva a data original.
-        // O service desfaz o efeito anterior no saldo e aplica os novos valores.
-        Transaction atualizada = dto.date() != null
-                ? transactionService.updateTransaction(transaction, bankAccount, category, dto.type(), dto.description(), dto.value(), dto.method(), dto.date())
-                : transactionService.updateTransaction(transaction, bankAccount, category, dto.type(), dto.description(), dto.value(), dto.method());
-
-        recurrenceRuleService.saveForTransaction(atualizada, dto.recurrenceFrequency(), dto.recurrenceEndDate());
-
-        return ResponseEntity.ok(new ApiResponse<>("Transacao atualizada com sucesso!", TransactionMapper.toResponseDTO(atualizada, recurrenceRuleService.findByTransaction(atualizada))));
-    }
-
-    // Valida a recorrencia antes de salvar ou atualizar a movimentacao.
-    // Devolve 400 BAD REQUEST quando a data final nao combina com os dados recebidos.
-    private void validateRecurrence(LocalDate transactionDate, TransactionRequestDTO dto) {
-        // Uma data final so faz sentido quando existe uma frequencia de recorrencia.
-        if (dto.recurrenceFrequency() == null && dto.recurrenceEndDate() != null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "A data final exige uma frequencia de recorrencia"
-            );
-        }
-
-        // A recorrencia nao pode terminar antes da data da propria movimentacao.
-        if (dto.recurrenceEndDate() != null && dto.recurrenceEndDate().isBefore(transactionDate)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "A data final nao pode ser anterior a data da transacao"
-            );
-        }
+        // Uma falha na recorrencia tambem desfaz a atualizacao da movimentacao e do saldo.
+        return ResponseEntity.ok(new ApiResponse<>("Transacao atualizada com sucesso!", transactionApplicationService.update(id, dto)));
     }
 
     // Endpoint para excluir uma movimentacao
@@ -209,10 +160,8 @@ public class TransactionController {
     @Operation(summary = "Excluir movimentação")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Excluído com sucesso, sem corpo de resposta", content = @io.swagger.v3.oas.annotations.media.Content)
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        Transaction transaction = transactionService.findById(id);
-        // Remove primeiro a regra vinculada; depois o service reverte o saldo e exclui a movimentacao.
-        recurrenceRuleService.deleteForTransaction(transaction);
-        transactionService.deleteTransaction(transaction);
+        // O service remove a regra, reverte o saldo e exclui a movimentacao juntos.
+        transactionApplicationService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

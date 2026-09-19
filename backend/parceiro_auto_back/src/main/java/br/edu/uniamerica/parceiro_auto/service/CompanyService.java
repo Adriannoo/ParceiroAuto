@@ -22,8 +22,6 @@ import feign.RetryableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Service

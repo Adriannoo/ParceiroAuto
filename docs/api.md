@@ -4,7 +4,7 @@ A API conecta o front ao PostgreSQL e concentra os cadastros e as regras finance
 
 ## Executar e acessar
 
-Configure o Java 21 e a conexao com PostgreSQL em `backend/parceiro_auto_back/src/main/resources/application.properties`. Com o banco criado e disponivel, execute na pasta do back:
+Configure o Java 21. Em `backend/parceiro_auto_back/src/main/resources`, copie `application.properties.example` para `application.properties` e ajuste a conexao com PostgreSQL. O arquivo local nao e versionado. Com o banco criado e disponivel, execute na pasta do back:
 
 ```powershell
 ./mvnw.cmd spring-boot:run
@@ -79,7 +79,7 @@ Antes de testar, cadastre uma empresa, uma conta e uma categoria compativel com 
 - Para recorrencia, envie `recurrenceFrequency`: `DAILY`, `WEEKLY`, `MONTHLY` ou `YEARLY`. `recurrenceEndDate` e opcional, exige frequencia e nao pode anteceder a data da movimentacao.
 - Na atualizacao, omitir a frequencia remove a regra de recorrencia existente. As consultas de recorrencia calculam as proximas datas; esse fluxo nao cria novos lancamentos automaticamente.
 
-O service atualiza o saldo da conta ao criar, editar ou excluir uma movimentacao. Inativar uma categoria preserva seu registro; encerrar uma recorrencia preserva a movimentacao original.
+O `TransactionApplicationService` coordena movimentacao, saldo e recorrencia em uma unica transacao: se uma etapa falhar, todas sao desfeitas. Inativar uma categoria preserva seu registro; encerrar uma recorrencia preserva a movimentacao original.
 
 ## Validacao e documentacao
 
@@ -100,4 +100,4 @@ Validar a entrada evita que dados invalidos avancem para a regra de negocio. `@N
 
 A consulta de CNPJ usa OpenFeign, com timeout de conexao de 3 segundos e leitura de 5 segundos. Nesse fluxo, ausencia na BrasilAPI retorna `404`, falha HTTP externa retorna `502` e falha de comunicacao retorna `503`. O login invalido retorna `401`; validacoes de entrada e regras de recorrencia podem retornar `400`. O formato do erro nao deve ser presumido igual ao `ApiResponse` de sucesso.
 
-Veja tambem o [guia de Swagger, validacao e testes](../backend/parceiro_auto_back/docs/swagger-validacao.md) e os detalhes do [financeiro no backend](financeiro-backend.md).
+Veja tambem o [guia de Swagger, validacao e testes](swagger-validacao.md) e os detalhes do [financeiro no backend](financeiro-backend.md).

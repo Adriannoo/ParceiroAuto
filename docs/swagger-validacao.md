@@ -1,5 +1,16 @@
 # Swagger e validação de entrada
 
+## Verificacoes depois do merge
+
+`ApiDocumentationAndValidationTest` tambem verifica JSON malformado, enums e parametros
+invalidos (400), rotas inexistentes (404), metodos incorretos (405) e respostas de
+conflito de banco (409) sem detalhes de SQL.
+
+`TransactionAtomicityTest` usa H2 com persistencia real e simula falhas depois da escrita.
+Ele verifica rollback de criacao, atualizacao e exclusao, incluindo saldo e recorrencia,
+alem do fluxo completo de sucesso. O `TransactionApplicationService` coordena essas
+operacoes com `@Transactional`. Esse teste nao substitui a verificacao com PostgreSQL.
+
 ## Acessar a documentação
 
 Com o back iniciado, abra http://localhost:8080/swagger-ui/index.html.

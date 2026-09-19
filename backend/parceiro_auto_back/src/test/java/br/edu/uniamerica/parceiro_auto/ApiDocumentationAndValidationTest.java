@@ -10,6 +10,8 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -34,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.password=",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=none",
-        "spring.flyway.enabled=false"
+        "spring.flyway.enabled=false",
+        "integrations.brasil-api.url=http://127.0.0.1:1"
 })
 @AutoConfigureMockMvc
 class ApiDocumentationAndValidationTest {
@@ -46,6 +49,41 @@ class ApiDocumentationAndValidationTest {
     @MockitoBean TransactionService transactionService;
     @MockitoBean TransactionCategoryService transactionCategoryService;
     @MockitoBean RecurrenceRuleService recurrenceRuleService;
+    @MockitoBean TransactionApplicationService transactionApplicationService;
+
+    // Confere erros de leitura que acontecem antes da Bean Validation.
+    @ParameterizedTest
+    @ValueSource(strings = {"{", "{\"type\":\"INVALIDO\"}", "{\"date\":\"data-invalida\"}"})
+    void rejectsUnreadableJson(String body) throws Exception {
+        mvc.perform(post("/api/transactions").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").exists());
+        verifyNoInteractions(transactionApplicationService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/transactions/abc", "/api/transactions/company/1/last",
+            "/api/transactions/company/1/last?limit=abc"})
+    void rejectsInvalidParameters(String path) throws Exception {
+        mvc.perform(get(path)).andExpect(status().isBadRequest());
+        verifyNoInteractions(transactionApplicationService, transactionService, companyService);
+    }
+
+    @Test
+    void hidesDatabaseDetails() throws Exception {
+        when(transactionService.findById(1L))
+                .thenThrow(new DataIntegrityViolationException("SQL secreto constraint fk_empresa"));
+        mvc.perform(get("/api/transactions/1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem").value(
+                        "Operacao nao permitida: existem dados duplicados ou registros vinculados"));
+    }
+
+    @Test
+    void preservesFrameworkHttpStatuses() throws Exception {
+        mvc.perform(get("/api/rota-inexistente")).andExpect(status().isNotFound());
+        mvc.perform(patch("/api/transactions/1")).andExpect(status().isMethodNotAllowed());
+    }
 
     // A empresa da conta vem da URL, sem precisar repetir o campo no JSON.
     @Test
@@ -93,7 +131,7 @@ class ApiDocumentationAndValidationTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(userService, companyService, bankAccountService,
-                transactionService, transactionCategoryService);
+                transactionService, transactionCategoryService, transactionApplicationService);
     }
 
     @Test
