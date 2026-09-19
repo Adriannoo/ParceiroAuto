@@ -1,4 +1,4 @@
-package br.edu.uniamerica.parceiro_auto.controller.dto;
+package br.edu.uniamerica.parceiro_auto.controller.dto.transaction;
 
 import br.edu.uniamerica.parceiro_auto.entity.enums.RecurrenceFrequency;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;

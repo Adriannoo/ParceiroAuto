@@ -1,6 +1,6 @@
 package br.edu.uniamerica.parceiro_auto;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionRequestDTO;
 import br.edu.uniamerica.parceiro_auto.entity.*;
 import br.edu.uniamerica.parceiro_auto.entity.enums.*;
 import br.edu.uniamerica.parceiro_auto.repository.*;
@@ -35,11 +35,34 @@ class TransactionAtomicityTest {
     @Autowired TransactionCategoryRepository categories;
     @Autowired TransactionRepository transactions;
     @Autowired RecurrenceRuleRepository rules;
+    @Autowired TransactionCategoryService categoryService;
+    @Autowired CompanyService companyService;
     @MockitoSpyBean RecurrenceRuleService recurrenceService;
     @MockitoSpyBean TransactionService transactionService;
     private Long companyId;
     private Long accountId;
     private Long categoryId;
+
+    @Test
+    void readingInactiveCategoriesDoesNotRecreateThem() {
+        var company = companies.findById(companyId).orElseThrow();
+        categoryService.deactivateCategory(company, categoryId);
+        long count = categories.count();
+        assertThat(categoryService.findActiveByCompany(company)).isEmpty();
+        assertThat(categoryService.findActiveByCompany(company)).isEmpty();
+        assertThat(categories.count()).isEqualTo(count);
+        assertThat(categories.findById(categoryId).orElseThrow().isActive()).isFalse();
+    }
+
+    @Test
+    void newCompanyReceivesDefaultCategoriesAtCreation() {
+        var dto = new br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyRequestDTO(
+                "11222333000181", "Teste", "Teste", null, LegalNature.LTDA,
+                TaxRegime.SIMPLES_NACIONAL, CompanySize.ME, "85800-000", "Rua", "1",
+                null, "Centro", "Cascavel", "PR", "45999999999", "teste@example.com", true);
+        var company = companyService.createCompany(dto);
+        assertThat(categoryService.findActiveByCompany(company)).hasSize(10);
+    }
 
     @BeforeEach
     void prepareData() {

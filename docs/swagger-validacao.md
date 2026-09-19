@@ -106,11 +106,14 @@ Para verificar PostgreSQL, informe um banco separado de testes:
 ```
 
 Se houver senha, informe `-Dtest.postgres.password` no seu ambiente de testes.
-O teste cria um schema exclusivo `test_*`, aplica V1, V2 e V3 e valida as entidades.
+O teste cria um schema exclusivo `test_*`, aplica V1 e V2 e valida as entidades.
+Tambem confere a empresa de demonstracao, a conta com saldo zero, as dez categorias
+e a ausencia de usuarios com senhas fixas na carga inicial.
 Tambem confere que uma nova chamada ao Flyway nao reaplica as migrations, verifica
 ordenacao e limite, rejeita vinculos de outra empresa e verifica rollback do saldo.
 O schema permanece no banco de teste para inspecao. Sem `test.postgres.url`, essa
 classe e ignorada. Nao use o banco de trabalho para esse comando.
 
-As migrations existentes foram preservadas. Dados de exemplo sao criados somente
-pelos testes, sem popular o banco normal da aplicacao.
+O historico foi consolidado para banco vazio. A V2 popula a empresa de demonstracao,
+sua conta e categorias; os demais dados de teste ficam apenas nos schemas de teste.
+Bancos com as migrations antigas precisam ser recriados antes de usar esta versao.

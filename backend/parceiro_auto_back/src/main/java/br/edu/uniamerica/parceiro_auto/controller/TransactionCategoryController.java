@@ -1,8 +1,8 @@
 package br.edu.uniamerica.parceiro_auto.controller;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.ApiResponse;
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionCategoryRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionCategoryResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.category.TransactionCategoryRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.category.TransactionCategoryResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.TransactionCategoryMapper;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
@@ -66,6 +66,7 @@ public class TransactionCategoryController {
     // Queremos devolver 201 CREATED, que e o status para criacao
     // @Valid verifica as restricoes do DTO recebido pelo @RequestBody.
     @PostMapping("/company/{companyId}")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Categoria criada", useReturnTypeSchema = true)
     @Operation(summary = "Cadastrar categoria de movimentacao")
     public ResponseEntity<ApiResponse<TransactionCategoryResponseDTO>> create(
             @PathVariable Long companyId,
@@ -74,14 +75,8 @@ public class TransactionCategoryController {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
 
-        TransactionCategory category;
-
-        // Converte as rejeicoes do service em 400 BAD REQUEST, mantendo a mensagem do erro.
-        try {
-            category = transactionCategoryService.createCategory(company, dto.name(), dto.type());
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
-        }
+        // O tratamento dos erros fica centralizado no GlobalExceptionHandler.
+        TransactionCategory category = transactionCategoryService.createCategory(company, dto.name(), dto.type());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Categoria criada com sucesso!", TransactionCategoryMapper.toResponseDTO(category)));
@@ -91,16 +86,13 @@ public class TransactionCategoryController {
     // DELETE localhost:8080/api/transaction-categories/company/{companyId}/{categoryId}
     // Queremos devolver 204 NO CONTENT, sem corpo de resposta
     @DeleteMapping("/company/{companyId}/{categoryId}")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Categoria inativada", content = @io.swagger.v3.oas.annotations.media.Content)
     @Operation(summary = "Inativar categoria de movimentacao")
     public ResponseEntity<Void> delete(@PathVariable Long companyId, @PathVariable Long categoryId) {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
 
-        try {
-            transactionCategoryService.deactivateCategory(company, categoryId);
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
-        }
+        transactionCategoryService.deactivateCategory(company, categoryId);
 
         return ResponseEntity.noContent().build();
     }
@@ -118,13 +110,7 @@ public class TransactionCategoryController {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
 
-        TransactionCategory category;
-
-        try {
-            category = transactionCategoryService.updateCategory(company, categoryId, dto.name(), dto.type());
-        } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
-        }
+        TransactionCategory category = transactionCategoryService.updateCategory(company, categoryId, dto.name(), dto.type());
 
         return ResponseEntity.ok(new ApiResponse<>("Categoria atualizada com sucesso!", TransactionCategoryMapper.toResponseDTO(category)));
     }

@@ -1,8 +1,8 @@
 package br.edu.uniamerica.parceiro_auto.controller;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.ApiResponse;
-import br.edu.uniamerica.parceiro_auto.controller.dto.UserRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.UserResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.user.UserRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.user.UserResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.UserMapper;
 import br.edu.uniamerica.parceiro_auto.entity.User;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;

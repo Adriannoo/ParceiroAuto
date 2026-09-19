@@ -1,6 +1,6 @@
 package br.edu.uniamerica.parceiro_auto.controller.dto.mapper;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionResponseDTO;
 import br.edu.uniamerica.parceiro_auto.entity.RecurrenceRule;
 import br.edu.uniamerica.parceiro_auto.entity.Transaction;
 

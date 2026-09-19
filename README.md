@@ -18,6 +18,8 @@ Projeto Integrador do semestre de Engenharia de Software: um sistema contábil c
 
 No back, `controller` recebe as requisições, `service` concentra as regras de negócio, `repository` acessa o banco e `entity` representa os dados persistidos. Os DTOs definem os dados de entrada e saída, e os mappers convertem entidades em DTOs de resposta.
 
+Os DTOs estão separados por assunto: `user`, `company`, `bankaccount`, `transaction`, `category` e `recurrence`. Veja o [resumo da arquitetura](docs/arquitetura-backend.md).
+
 ## Como executar
 
 **Back:** configure um JDK compatível com Java 21 e mantenha o PostgreSQL disponível. Copie `application.properties.example` para `application.properties` em `backend/parceiro_auto_back/src/main/resources` e ajuste a conexão para seu ambiente. O arquivo local não é versionado. Recarregue o Maven no IntelliJ e execute `Projeto4periodoApplication`.
@@ -29,6 +31,10 @@ Com `JAVA_HOME` configurado, também é possível iniciar pelo terminal, na past
 ```
 
 As migrations ficam em `src/main/resources/db/migration` e são executadas pelo Flyway na inicialização. A API usa `http://localhost:8080` por padrão.
+
+São apenas duas migrations SQL: `V1__create_tables.sql` cria a estrutura completa e `V2__insert_initial_data.sql` insere uma empresa de demonstração, uma conta com saldo zero e dez categorias. Não há usuário ou senha fixa; cadastre o usuário pela API, que já salva a senha com hash PBKDF2.
+
+Esse histórico foi reiniciado para uso em banco vazio. Quem já executou as migrations antigas precisa recriar o banco de desenvolvimento antes de iniciar. Novas empresas continuam recebendo categorias padrão pelo service.
 
 **Front:** com Node.js e npm compatíveis com Angular 21, execute na pasta `frontend/parceiro_auto_front`:
 

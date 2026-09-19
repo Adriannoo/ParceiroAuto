@@ -1,7 +1,7 @@
 package br.edu.uniamerica.parceiro_auto.service;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.TransactionMapper;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+import br.edu.uniamerica.parceiro_auto.entity.Transaction;
+import br.edu.uniamerica.parceiro_auto.repository.RecurrenceRuleRepository;
 
 // Mantem movimentacao, saldo e recorrencia na mesma transacao de banco.
 @Service
@@ -22,6 +26,20 @@ public class TransactionApplicationService {
     private final BankAccountService bankAccountService;
     private final TransactionCategoryService transactionCategoryService;
     private final RecurrenceRuleService recurrenceRuleService;
+    private final RecurrenceRuleRepository recurrenceRuleRepository;
+
+    // Busca as recorrencias em lote, evitando uma consulta por movimentacao.
+    @Transactional(readOnly = true)
+    public List<TransactionResponseDTO> toResponseDTOs(List<Transaction> transactions) {
+        if (transactions.isEmpty()) {
+            return List.of();
+        }
+        var rules = recurrenceRuleRepository.findByTransactionIn(transactions).stream()
+                .collect(Collectors.toMap(rule -> rule.getTransaction().getId(), rule -> rule));
+        return transactions.stream()
+                .map(transaction -> TransactionMapper.toResponseDTO(transaction, rules.get(transaction.getId())))
+                .toList();
+    }
 
     // Se qualquer etapa falhar, o Spring desfaz todas as alteracoes desta operacao.
     public TransactionResponseDTO create(TransactionRequestDTO dto) {

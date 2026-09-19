@@ -81,24 +81,17 @@ Encerrar a recorrencia remove apenas a regra de repeticao. A movimentacao origin
 
 ## Migrations
 
-As migrations foram reorganizadas para evitar duplicidade.
-
-A migration duplicada `V3__convert_ids_to_bigint.sql` foi removida porque repetia a conversao para `bigint` que ja estava dentro da V2.
-
-A migration de frequencia de recorrencia foi renomeada para manter a ordem simples:
+O historico foi consolidado em duas migrations SQL, para executar em banco vazio:
 
 ```text
 V1__create_tables.sql
-V2__add_company_details.sql
-V3__add_recurrence_frequency.sql
+V2__insert_initial_data.sql
 ```
 
-A V3 atual adiciona o campo `frequency` na tabela `recurrence_rule`:
-
-```sql
-ALTER TABLE recurrence_rule
-    ADD COLUMN IF NOT EXISTS frequency varchar(20) NOT NULL DEFAULT 'MONTHLY';
-```
+A V1 ja cria IDs e chaves estrangeiras bigint, os campos completos da empresa,
+o campo de hash da senha e a frequencia de recorrencia. A V2 insere uma empresa
+de demonstracao, uma conta com saldo zero e dez categorias, sem usuario ou senha fixa.
+Quem possui o historico antigo precisa recriar o banco de desenvolvimento.
 
 ## Validacoes
 
@@ -120,8 +113,7 @@ O backend tambem foi iniciado com PostgreSQL local para confirmar que o Flyway a
 
 ```text
 1 - create tables
-2 - add company details
-3 - add recurrence frequency
+2 - insert initial data
 ```
 
 ## Observacao sobre localStorage

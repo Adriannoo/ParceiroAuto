@@ -1,4 +1,4 @@
-package br.edu.uniamerica.parceiro_auto.controller.dto;
+package br.edu.uniamerica.parceiro_auto.controller.dto.bankaccount;
 
 import java.math.BigDecimal;
 

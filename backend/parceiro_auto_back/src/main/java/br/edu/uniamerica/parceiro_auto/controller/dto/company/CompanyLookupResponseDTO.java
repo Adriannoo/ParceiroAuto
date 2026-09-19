@@ -1,4 +1,4 @@
-package br.edu.uniamerica.parceiro_auto.controller.dto;
+package br.edu.uniamerica.parceiro_auto.controller.dto.company;
 
 public record CompanyLookupResponseDTO(
         String cnpj,

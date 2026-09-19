@@ -19,18 +19,19 @@ import java.util.List;
 public class TransactionCategoryService {
     private final TransactionCategoryRepository transactionalCategoryRepository;
 
+    // Consultas nao criam nem reativam categorias.
+    @Transactional(readOnly = true)
     public List<TransactionCategory> findActiveByCompany(Company company) {
         if (company == null) {
             throw new IllegalArgumentException("A empresa nao pode ser nula!");
         }
 
-        List<TransactionCategory> categories = transactionalCategoryRepository.findByCompanyAndActiveTrueOrderByName(company);
+        return transactionalCategoryRepository.findByCompanyAndActiveTrueOrderByName(company);
+    }
 
-        if (!categories.isEmpty()) {
-            return categories;
-        }
-
-        return transactionalCategoryRepository.saveAll(List.of(
+    // Chamado somente no cadastro da empresa, dentro da mesma transacao.
+    public void createDefaults(Company company) {
+        transactionalCategoryRepository.saveAll(List.of(
                 createDefault(company, "Vendas", TransactionType.ENTRADA),
                 createDefault(company, "Servicos", TransactionType.ENTRADA),
                 createDefault(company, "Pecas", TransactionType.ENTRADA),
@@ -42,6 +43,7 @@ public class TransactionCategoryService {
                 createDefault(company, "Manutencao", TransactionType.SAIDA),
                 createDefault(company, "Outros", TransactionType.SAIDA)
         ));
+        log.info("Categorias padrao criadas para empresa id:({})", company.getId());
     }
 
     @Transactional(readOnly = true)
@@ -76,9 +78,14 @@ public class TransactionCategoryService {
                     }
 
                     category.setActive(true);
+                    log.info("Reativando categoria id:({})", category.getId());
                     return transactionalCategoryRepository.save(category);
                 })
-                .orElseGet(() -> transactionalCategoryRepository.save(createDefault(company, formattedName, type)));
+                .orElseGet(() -> {
+                    TransactionCategory saved = transactionalCategoryRepository.save(createDefault(company, formattedName, type));
+                    log.info("Categoria id:({}) criada para empresa id:({})", saved.getId(), company.getId());
+                    return saved;
+                });
     }
 
     public TransactionCategory deactivateCategory(Company company, Long categoryId) {
@@ -89,6 +96,7 @@ public class TransactionCategoryService {
         }
 
         category.setActive(false);
+        log.info("Inativando categoria id:({})", categoryId);
         return transactionalCategoryRepository.save(category);
     }
 
@@ -116,6 +124,7 @@ public class TransactionCategoryService {
         category.setName(formattedName);
         category.setType(type);
         category.setActive(true);
+        log.info("Atualizando categoria id:({})", categoryId);
         return transactionalCategoryRepository.save(category);
     }
 

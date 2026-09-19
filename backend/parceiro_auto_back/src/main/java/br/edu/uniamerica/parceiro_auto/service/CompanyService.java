@@ -3,14 +3,14 @@ package br.edu.uniamerica.parceiro_auto.service;
 import java.util.List;
 import java.util.Optional;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyLookupResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyLookupResponseDTO;
 import br.edu.uniamerica.parceiro_auto.exception.BusinessRuleException;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyRequestDTO;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.repository.CompanyRepository;
 import br.edu.uniamerica.parceiro_auto.util.CnpjValidator;
@@ -31,6 +31,7 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final BrasilApiClient brasilApiClient;
+    private final TransactionCategoryService transactionCategoryService;
 
     public Company createCompany(CompanyRequestDTO dto) {
 
@@ -48,6 +49,7 @@ public class CompanyService {
         applyCompanyData(company, dto, normalizedCnpj);
 
         Company saved = companyRepository.save(company);
+        transactionCategoryService.createDefaults(saved);
         log.info("Empresa com CNPJ {} cadastrada (id={})", normalizedCnpj, saved.getId());
         return saved;
     }

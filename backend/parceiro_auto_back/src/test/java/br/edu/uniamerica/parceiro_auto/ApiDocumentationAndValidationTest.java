@@ -1,6 +1,6 @@
 package br.edu.uniamerica.parceiro_auto;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionRequestDTO;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;
@@ -162,6 +162,15 @@ class ApiDocumentationAndValidationTest {
                 .andExpect(jsonPath("$.paths['/api/companies'].get").exists())
                 .andExpect(jsonPath("$.paths['/api/bank-accounts/company/{companyId}'].post").exists())
                 .andExpect(jsonPath("$.paths['/api/users/login'].post").exists());
+    }
+
+    @Test
+    void documentsCategoryAndRecurrenceSuccessStatuses() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/transaction-categories/company/{companyId}'].post.responses['201']").exists())
+                .andExpect(jsonPath("$.paths['/api/transaction-categories/company/{companyId}/{categoryId}'].delete.responses['204']").exists())
+                .andExpect(jsonPath("$.paths['/api/recurrence-rules/{id}'].delete.responses['204']").exists());
     }
 
     @Test

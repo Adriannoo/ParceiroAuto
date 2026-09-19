@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import br.edu.uniamerica.parceiro_auto.exception.BusinessRuleException;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.edu.uniamerica.parceiro_auto.entity.User;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // Cria um novo usuário com login e senha.
     public User createUser(String login, String password) {
@@ -51,7 +53,8 @@ public class UserService {
         User user = new User();
 
         user.setLogin(normalizedLogin);
-        user.setPassword(password);
+        // Persiste apenas o hash; nunca a senha recebida.
+        user.setPassword(passwordEncoder.encode(password));
 
         User saved = userRepository.save(user);
         log.info("Usuario id:({}) criado com sucesso", saved.getId());
@@ -59,6 +62,7 @@ public class UserService {
     }
 
     // Autentica um usuário com base no login e senha fornecidos.
+    @Transactional(readOnly = true)
     public User authenticate(String login, String password) {
 
         if (login == null || login.isBlank()) {
@@ -84,7 +88,8 @@ public class UserService {
             return null;
         }
 
-        if (!user.getPassword().equals(password)) {
+        // Compara usando o salt e o algoritmo presentes no hash armazenado.
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             log.warn("Login falhou: senha incorreta para usuario:({})", normalizedLogin);
             return null;
         }

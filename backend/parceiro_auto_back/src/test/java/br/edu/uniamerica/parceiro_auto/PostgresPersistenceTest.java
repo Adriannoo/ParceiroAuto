@@ -53,7 +53,7 @@ class PostgresPersistenceTest {
         assertThat(flyway.info().applied())
                 .filteredOn(migration -> migration.getVersion() != null)
                 .extracting(migration -> migration.getVersion().toString())
-                .containsExactly("1", "2", "3");
+                .containsExactly("1", "2");
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
@@ -139,5 +139,16 @@ class PostgresPersistenceTest {
 
     private BigDecimal balance(long account) {
         return jdbc.queryForObject("SELECT balance FROM bank_account WHERE id = ?", BigDecimal.class, account);
+    }
+
+    // Confere a carga inicial e garante que nao existe senha fixa na instalacao.
+    @Test
+    void seedsDemoCompanyAccountAndCategoriesWithoutUsers() {
+        Long company = jdbc.queryForObject("SELECT id FROM company WHERE cnpj = '11222333000181'", Long.class);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM transaction_category WHERE fk_id_company = ? AND active", Integer.class, company)).isEqualTo(10);
+        assertThat(jdbc.queryForObject("SELECT balance FROM bank_account WHERE fk_id_company = ? AND default_account", BigDecimal.class, company)).isEqualByComparingTo("0.00");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class)).isZero();
+        assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM transaction_category WHERE fk_id_company = ?", Integer.class, company)).isEqualTo(10);
     }
 }

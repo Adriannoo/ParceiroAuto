@@ -1,8 +1,8 @@
 package br.edu.uniamerica.parceiro_auto.controller;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.ApiResponse;
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.TransactionResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.TransactionMapper;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
@@ -59,10 +59,7 @@ public class TransactionController {
     @Operation(summary = "Listar movimentações")
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findAll() {
         // Converte cada movimentacao em DTO e inclui sua regra de recorrencia, quando houver.
-        List<TransactionResponseDTO> transacoes = transactionService.findAll()
-                .stream()
-                .map(transaction -> TransactionMapper.toResponseDTO(transaction, recurrenceRuleService.findByTransaction(transaction)))
-                .toList();
+        List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findAll());
 
         return ResponseEntity.ok(new ApiResponse<>("Transacoes listadas com sucesso!", transacoes));
     }
@@ -99,9 +96,7 @@ public class TransactionController {
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByBankAccount(@PathVariable Long bankAccountId) {
         BankAccount bankAccount = bankAccountService.findById(bankAccountId);
 
-        List<TransactionResponseDTO> transacoes = transactionService.findByBankAccount(bankAccount).stream()
-                .map(transaction -> TransactionMapper.toResponseDTO(transaction, recurrenceRuleService.findByTransaction(transaction)))
-                .toList();
+        List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findByBankAccount(bankAccount));
 
         return ResponseEntity.ok(new ApiResponse<>("Transacoes listadas com sucesso!", transacoes));
     }
@@ -115,9 +110,7 @@ public class TransactionController {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
 
-        List<TransactionResponseDTO> transacoes = transactionService.findByCompany(company).stream()
-                .map(transaction -> TransactionMapper.toResponseDTO(transaction, recurrenceRuleService.findByTransaction(transaction)))
-                .toList();
+        List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findByCompany(company));
 
         return ResponseEntity.ok(new ApiResponse<>("Transacoes listadas com sucesso!", transacoes));
     }
@@ -135,9 +128,7 @@ public class TransactionController {
         Company company = companyService.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
 
-        List<TransactionResponseDTO> transacoes = transactionService.findLastByCompany(company, limit).stream()
-                .map(transaction -> TransactionMapper.toResponseDTO(transaction, recurrenceRuleService.findByTransaction(transaction)))
-                .toList();
+        List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findLastByCompany(company, limit));
 
         return ResponseEntity.ok(new ApiResponse<>("Ultimas transacoes listadas com sucesso!", transacoes));
     }

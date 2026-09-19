@@ -16,11 +16,17 @@ O Flyway aplica as migrations na inicializacao. Por padrao:
 - [Swagger UI](http://localhost:8080/swagger-ui/index.html): documentacao interativa.
 - [OpenAPI JSON](http://localhost:8080/v3/api-docs): contrato gerado a partir do codigo.
 
+Em banco vazio, V1 cria as tabelas e V2 carrega uma empresa de demonstracao,
+uma conta com saldo zero e dez categorias. Cadastre seu usuario pela API; nao ha
+senha padrao. O historico antigo precisa ser descartado recriando o banco de desenvolvimento.
+
 No Swagger, escolha uma rota, clique em **Try it out**, preencha os parametros e use **Execute**. Confira o status e o corpo em **Response body**. Os cadastros, alteracoes e exclusoes executados ali afetam o banco configurado.
 
 ## Como a requisicao funciona
 
 O controller recebe a URL e o JSON, valida o DTO e chama o service. O service aplica as regras de negocio e usa o repository para acessar o banco. Os mappers transformam as entidades em DTOs de resposta.
+
+Os DTOs estao organizados por assunto. No cadastro de usuario, a senha e convertida em hash PBKDF2; o login verifica esse hash. O contrato HTTP permanece igual. Detalhes no [guia de arquitetura](arquitetura-backend.md).
 
 As respostas com `ApiResponse<T>` possuem `mensagem` e `dados`; `dados` pode ser um objeto ou uma lista. Cadastros retornam `201`, consultas e atualizacoes retornam `200`. Exclusoes de contas, movimentacoes, categorias e recorrencias retornam `204`, sem corpo. A exclusao de empresa atualmente retorna `200` com uma mensagem em texto.
 
@@ -80,6 +86,8 @@ Antes de testar, cadastre uma empresa, uma conta e uma categoria compativel com 
 - Na atualizacao, omitir a frequencia remove a regra de recorrencia existente. As consultas de recorrencia calculam as proximas datas; esse fluxo nao cria novos lancamentos automaticamente.
 
 O `TransactionApplicationService` coordena movimentacao, saldo e recorrencia em uma unica transacao: se uma etapa falhar, todas sao desfeitas. Inativar uma categoria preserva seu registro; encerrar uma recorrencia preserva a movimentacao original.
+
+O GET de categorias nunca cria registros. Novas empresas recebem as categorias padrao no cadastro; se todas forem inativadas, a consulta retorna uma lista vazia.
 
 ## Validacao e documentacao
 

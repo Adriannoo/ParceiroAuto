@@ -1,9 +1,9 @@
 package br.edu.uniamerica.parceiro_auto.controller;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.ApiResponse;
-import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyLookupResponseDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.CompanyResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyLookupResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.CompanyMapper;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
@@ -98,12 +98,10 @@ public class CompanyController {
                 .body(new ApiResponse<>("Empresas listadas com sucesso!", companies));
     }
 
-    // End point para atualizar uma empesa
+    // Endpoint para atualizar uma empresa
     // Queremos devolver 200 OK, status generico para sucesso
-    // PUT LOCALHOST:8080/api/id
-    /*
-     * @Valid = Mandda verificar as restrições desse DTO antes de executar o corpo, na DTO tem uma implementacao de grupo de movimentacoes com extends.
-     */
+    // PUT localhost:8080/api/companies/{id}
+    // @Valid verifica as restricoes do CompanyRequestDTO antes de executar o metodo.
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar empresa")
@@ -113,19 +111,19 @@ public class CompanyController {
                         () -> new ResourceNotFoundException("Empresa nao encontrada")
                 );
 
-            Company updated = companyService.updateCompany(company, dto);
+        Company updated = companyService.updateCompany(company, dto);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>("Empresa atualizada com sucesso!", CompanyMapper.toResponseDTO(updated)));
     }
 
-    // End point para deletar uma empesa
-    // Vamos devolver 204 No Content - sem corpo, status para delete sucesso
-    // DELETE LOCALHOST:8080/api/id
+    // Endpoint para excluir uma empresa
+    // Devolve 200 OK com a mensagem de confirmacao.
+    // DELETE localhost:8080/api/companies/{id}
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir empresa")
     public ResponseEntity<String> deleteCompany(@PathVariable Long id) {
-        // Sem o FindById no controller, ID inexistente vai gerar 500 Internal Server Error por conta do Ille da service, nao 404
+        // O service verifica o ID e o handler converte recurso inexistente em 404.
         companyService.deleteCompany(id);
         return ResponseEntity.status(HttpStatus.OK).body("Empresa deletada com sucesso!");
     }

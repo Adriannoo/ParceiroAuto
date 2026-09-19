@@ -1,4 +1,4 @@
-package br.edu.uniamerica.parceiro_auto.controller.dto;
+package br.edu.uniamerica.parceiro_auto.controller.dto.user;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

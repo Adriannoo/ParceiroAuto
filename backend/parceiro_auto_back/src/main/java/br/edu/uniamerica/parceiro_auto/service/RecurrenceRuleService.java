@@ -1,12 +1,13 @@
 package br.edu.uniamerica.parceiro_auto.service;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.RecurringTransactionResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.recurrence.RecurringTransactionResponseDTO;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.RecurrenceRule;
 import br.edu.uniamerica.parceiro_auto.entity.Transaction;
 import br.edu.uniamerica.parceiro_auto.entity.enums.RecurrenceFrequency;
 import br.edu.uniamerica.parceiro_auto.repository.RecurrenceRuleRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional
 public class RecurrenceRuleService {
@@ -22,8 +24,7 @@ public class RecurrenceRuleService {
 
     public void saveForTransaction(Transaction transaction, RecurrenceFrequency frequency, LocalDate endDate) {
         if (transaction == null) {
-            deleteForTransaction(transaction);
-            return;
+            throw new IllegalArgumentException("A movimentacao nao pode ser nula");
         }
 
         if (frequency == null) {
@@ -54,6 +55,7 @@ public class RecurrenceRuleService {
         rule.setLastExecution(transaction.getDate());
 
         recurrenceRuleRepository.save(rule);
+        log.info("Recorrencia salva para movimentacao id:({})", transaction.getId());
     }
 
     public void deleteForTransaction(Transaction transaction) {
@@ -62,7 +64,10 @@ public class RecurrenceRuleService {
         }
 
         recurrenceRuleRepository.findByTransaction(transaction)
-                .ifPresent(recurrenceRuleRepository::delete);
+                .ifPresent(rule -> {
+                    recurrenceRuleRepository.delete(rule);
+                    log.info("Recorrencia id:({}) removida", rule.getId());
+                });
     }
 
     @Transactional(readOnly = true)
@@ -72,13 +77,8 @@ public class RecurrenceRuleService {
 
     @Transactional(readOnly = true)
     public List<RecurringTransactionResponseDTO> findNextByCompany(Company company, int limit) {
-        LocalDate today = LocalDate.now();
-
-        return recurrenceRuleRepository.findByTransactionCompany(company)
-                .stream()
-                .map(rule -> toNextResponse(rule, today))
-                .filter(item -> item.nextDate() != null)
-                .sorted(Comparator.comparing(RecurringTransactionResponseDTO::nextDate))
+        // Reutiliza a mesma ordenacao e o filtro da listagem completa.
+        return findByCompany(company).stream()
                 .limit(Math.max(limit, 1))
                 .toList();
     }
@@ -114,6 +114,7 @@ public class RecurrenceRuleService {
         rule.setFrequency(frequency);
         rule.setEndDate(endDate);
 
+        log.info("Atualizando recorrencia id:({})", id);
         return toNextResponse(recurrenceRuleRepository.save(rule), LocalDate.now());
     }
 
@@ -123,26 +124,14 @@ public class RecurrenceRuleService {
         }
 
         recurrenceRuleRepository.deleteById(id);
+        log.info("Recorrencia id:({}) encerrada", id);
         return true;
     }
 
     private RecurringTransactionResponseDTO toNextResponse(RecurrenceRule rule, LocalDate today) {
         LocalDate nextDate = nextDate(rule, today);
 
-        if (nextDate == null) {
-            return new RecurringTransactionResponseDTO(
-                    rule.getId(),
-                    rule.getTransaction().getId(),
-                    rule.getTransaction().getCompany().getId(),
-                    rule.getTransaction().getDescription(),
-                    rule.getTransaction().getValue(),
-                    rule.getTransaction().getType(),
-                    rule.getFrequency(),
-                    null,
-                    rule.getEndDate()
-            );
-        }
-
+        // nextDate pode ser nula quando a regra ja encerrou.
         Transaction transaction = rule.getTransaction();
 
         return new RecurringTransactionResponseDTO(

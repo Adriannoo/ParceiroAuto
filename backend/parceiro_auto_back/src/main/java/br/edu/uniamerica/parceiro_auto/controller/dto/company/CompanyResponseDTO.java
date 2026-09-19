@@ -1,4 +1,4 @@
-package br.edu.uniamerica.parceiro_auto.controller.dto;
+package br.edu.uniamerica.parceiro_auto.controller.dto.company;
 
 import br.edu.uniamerica.parceiro_auto.entity.enums.CompanySize;
 import br.edu.uniamerica.parceiro_auto.entity.enums.LegalNature;
