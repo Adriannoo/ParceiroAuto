@@ -10,7 +10,7 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   canActivate(): boolean {
-    if (this.authService.estaAutenticado()) {
+    if (this.authService.isAuthenticated()) {
       return true;
     }
 

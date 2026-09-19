@@ -1,24 +1,25 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, effect, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { EmpresaService } from '../empresa/empresa.service';
-import { Empresa } from '../empresa/empresa.model';
-import { MovimentacaoService } from '../movimentacao/movimentacao.service';
-import { Movimentacao } from '../movimentacao/movimentacao.model';
+import { forkJoin, of, switchMap } from 'rxjs';
+import { CompanyService } from '../companies/company.service';
+import { Company } from '../companies/company.model';
+import { TransactionService } from '../transactions/transaction.service';
+import { RecurringTransaction, Transaction, TransactionCategory } from '../transactions/transaction.model';
+import { CurrentCompanyService } from '../../services/current-company.service';
 
-interface BarraMes {
-  rotulo: string;
-  entradas: number;
-  saidas: number;
-  alturaEntrada: number;
-  alturaSaida: number;
+interface MonthlyBar {
+  label: string;
+  income: number;
+  expenses: number;
+  incomeHeight: number;
+  expenseHeight: number;
 }
 
-interface FatiaCategoria {
-  rotulo: string;
+interface CategorySlice {
+  label: string;
   total: number;
-  percentual: number;
+  percentage: number;
 }
 
 @Component({
@@ -28,134 +29,183 @@ interface FatiaCategoria {
   styleUrl: './dashboard.scss',
 })
 export class Dashboard implements OnInit {
-  private empresaService = inject(EmpresaService);
-  private movimentacaoService = inject(MovimentacaoService);
+  private companyService = inject(CompanyService);
+  private transactionService = inject(TransactionService);
+  private currentCompanyService = inject(CurrentCompanyService);
 
-  empresas = signal<Empresa[]>([]);
-  todas = signal<Movimentacao[]>([]);
-  carregando = signal(false);
+  companies = signal<Company[]>([]);
+  all = signal<Transaction[]>([]);
+  categories = signal<TransactionCategory[]>([]);
+  recurring = signal<RecurringTransaction[]>([]);
+  loading = signal(false);
 
-  empresaId = signal<number | 'todas'>('todas');
+  companyId = this.currentCompanyService.currentCompanyId;
 
-  hoje = new Date().toLocaleDateString('pt-BR', {
+  today = new Date().toLocaleDateString('pt-BR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
 
-  /** Competência atual no formato AAAA-MM, usada para recortar o mês. */
-  private mesAtual = new Date().toISOString().slice(0, 7);
+  /** Current month in YYYY-MM format, used to filter transactions. */
+  private currentMonth = new Date().toISOString().slice(0, 7);
 
-  movimentacoes = computed(() => {
-    const filtro = this.empresaId();
-    return filtro === 'todas'
-      ? this.todas()
-      : this.todas().filter((m) => m.empresaId === filtro);
+  constructor() {
+    effect(() => {
+      this.companyId();
+      this.loadRecurring();
+    });
+  }
+
+  transactions = computed(() => {
+    const filter = this.companyId();
+    return filter === null ? this.all() : this.all().filter((m) => m.companyId === filter);
   });
 
-  doMes = computed(() =>
-    this.movimentacoes().filter((m) => m.data.startsWith(this.mesAtual)),
+  monthlyTransactions = computed(() =>
+    this.transactions().filter((m) => m.date.startsWith(this.currentMonth)),
   );
 
-  receitaMes = computed(() => this.somar(this.doMes(), 'ENTRADA'));
-  despesaMes = computed(() => this.somar(this.doMes(), 'SAIDA'));
-  resultadoMes = computed(() => this.receitaMes() - this.despesaMes());
+  monthlyIncome = computed(() => this.sumByType(this.monthlyTransactions(), 'ENTRADA'));
+  monthlyExpenses = computed(() => this.sumByType(this.monthlyTransactions(), 'SAIDA'));
+  monthlyResult = computed(() => this.monthlyIncome() - this.monthlyExpenses());
 
-  saldoAcumulado = computed(
-    () => this.somar(this.movimentacoes(), 'ENTRADA') - this.somar(this.movimentacoes(), 'SAIDA'),
+  accumulatedBalance = computed(
+    () => this.sumByType(this.transactions(), 'ENTRADA') - this.sumByType(this.transactions(), 'SAIDA'),
   );
 
-  ticketMedio = computed(() => {
-    const entradas = this.doMes().filter((m) => m.tipo === 'ENTRADA');
-    return entradas.length === 0 ? 0 : this.receitaMes() / entradas.length;
+  averageIncome = computed(() => {
+    const income = this.monthlyTransactions().filter((m) => m.type === 'ENTRADA');
+    return income.length === 0 ? 0 : this.monthlyIncome() / income.length;
   });
 
-  /** Últimos seis meses, com as barras já normalizadas pelo maior valor do período. */
-  evolucao = computed<BarraMes[]>(() => {
-    const meses: { chave: string; rotulo: string }[] = [];
-    const referencia = new Date();
+  /** Last six months, with bar heights normalized to the maximum value. */
+  evolution = computed<MonthlyBar[]>(() => {
+    const months: { key: string; label: string }[] = [];
+    const reference = new Date();
 
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(referencia.getFullYear(), referencia.getMonth() - i, 1);
-      meses.push({
-        chave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-        rotulo: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+      const d = new Date(reference.getFullYear(), reference.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
       });
     }
 
-    const bruto = meses.map(({ chave, rotulo }) => {
-      const doPeriodo = this.movimentacoes().filter((m) => m.data.startsWith(chave));
+    const raw = months.map(({ key, label }) => {
+      const periodTransactions = this.transactions().filter((m) => m.date.startsWith(key));
       return {
-        rotulo,
-        entradas: this.somar(doPeriodo, 'ENTRADA'),
-        saidas: this.somar(doPeriodo, 'SAIDA'),
+        label,
+        income: this.sumByType(periodTransactions, 'ENTRADA'),
+        expenses: this.sumByType(periodTransactions, 'SAIDA'),
       };
     });
 
-    const teto = Math.max(...bruto.flatMap((b) => [b.entradas, b.saidas]), 1);
+    const maximum = Math.max(...raw.flatMap((b) => [b.income, b.expenses]), 1);
 
-    return bruto.map((b) => ({
+    return raw.map((b) => ({
       ...b,
-      alturaEntrada: Math.round((b.entradas / teto) * 100),
-      alturaSaida: Math.round((b.saidas / teto) * 100),
+      incomeHeight: Math.round((b.income / maximum) * 100),
+      expenseHeight: Math.round((b.expenses / maximum) * 100),
     }));
   });
 
-  despesasPorCategoria = computed<FatiaCategoria[]>(() => {
-    const saidas = this.doMes().filter((m) => m.tipo === 'SAIDA');
-    const total = saidas.reduce((soma, m) => soma + m.valor, 0);
-    const contagem = new Map<string, number>();
+  expensesByCategory = computed<CategorySlice[]>(() => {
+    const expenses = this.monthlyTransactions().filter((m) => m.type === 'SAIDA');
+    const total = expenses.reduce((sum, m) => sum + m.value, 0);
+    const counts = new Map<string, number>();
 
-    for (const m of saidas) {
-      contagem.set(m.categoria, (contagem.get(m.categoria) ?? 0) + m.valor);
+    for (const m of expenses) {
+      const category = this.categoryName(m);
+      counts.set(category, (counts.get(category) ?? 0) + m.value);
     }
 
-    return [...contagem.entries()]
-      .map(([rotulo, valor]) => ({
-        rotulo,
-        total: valor,
-        percentual: total === 0 ? 0 : Math.round((valor / total) * 100),
+    return [...counts.entries()]
+      .map(([label, value]) => ({
+        label,
+        total: value,
+        percentage: total === 0 ? 0 : Math.round((value / total) * 100),
       }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
   });
 
-  recentes = computed(() =>
-    [...this.movimentacoes()]
-      .sort((a, b) => b.data.localeCompare(a.data) || b.id - a.id)
+  recent = computed(() =>
+    [...this.transactions()]
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
       .slice(0, 5),
   );
 
   ngOnInit(): void {
-    this.carregando.set(true);
+    this.loading.set(true);
 
     forkJoin({
-      empresas: this.empresaService.listar(),
-      movimentacoes: this.movimentacaoService.listar(),
-    }).subscribe({
-      next: ({ empresas, movimentacoes }) => {
-        this.empresas.set(empresas);
-        this.todas.set(movimentacoes);
-        this.carregando.set(false);
+      companies: this.companyService.list(),
+      transactions: this.transactionService.list(),
+    }).pipe(
+      switchMap(({ companies, transactions }) => {
+        this.companies.set(companies);
+        this.currentCompanyService.ensureCompany(companies.filter((company) => company.active).map((company) => company.id));
+        this.all.set(transactions);
+
+        if (companies.length === 0) {
+          return of({ categories: [], recurring: [] });
+        }
+
+        const currentCompanyId = this.companyId() ?? companies[0].id;
+
+        return forkJoin({
+          categories: forkJoin(companies.map((company) => this.transactionService.listCategoriesByCompany(company.id))),
+          recurring: this.transactionService.listNextRecurringByCompany(currentCompanyId, 3),
+        });
+      }),
+    ).subscribe({
+      next: ({ categories, recurring }) => {
+        this.categories.set(categories.flat());
+        this.recurring.set(recurring);
+        this.loading.set(false);
       },
-      error: () => this.carregando.set(false),
+      error: () => this.loading.set(false),
     });
   }
 
-  private somar(lista: Movimentacao[], tipo: 'ENTRADA' | 'SAIDA'): number {
-    return lista.filter((m) => m.tipo === tipo).reduce((soma, m) => soma + m.valor, 0);
+  private sumByType(list: Transaction[], type: 'ENTRADA' | 'SAIDA'): number {
+    return list.filter((m) => m.type === type).reduce((sum, m) => sum + m.value, 0);
   }
 
-  nomeEmpresa(id: number): string {
-    return this.empresas().find((e) => e.id === id)?.nomeFantasia ?? 'Empresa removida';
+  companyName(id: number): string {
+    return this.companies().find((e) => e.id === id)?.tradeName ?? 'Empresa removida';
   }
 
-  moeda(valor: number): string {
-    return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  setCurrentCompany(companyId: number | string): void {
+    this.currentCompanyService.setCurrentCompanyId(Number(companyId));
+    this.loadRecurring();
   }
 
-  data(iso: string): string {
-    const [, mes, dia] = iso.split('-');
-    return `${dia}/${mes}`;
+  private loadRecurring(): void {
+    const companyId = this.companyId();
+
+    if (!companyId) {
+      this.recurring.set([]);
+      return;
+    }
+
+    this.transactionService.listNextRecurringByCompany(companyId, 3).subscribe({
+      next: (recurring) => this.recurring.set(recurring),
+      error: () => this.recurring.set([]),
+    });
+  }
+
+  categoryName(transaction: Transaction): string {
+    return this.categories().find((category) => category.id === transaction.transactionCategoryId)?.name ?? 'Categoria removida';
+  }
+
+  formatCurrency(value: number): string {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  date(iso: string): string {
+    const [, month, day] = iso.split('-');
+    return `${day}/${month}`;
   }
 }

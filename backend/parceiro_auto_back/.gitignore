@@ -1,5 +1,6 @@
 HELP.md
 target/
+/application.properties
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -18,6 +19,9 @@ target/
 *.iws
 *.iml
 *.ipr
+
+### Aplication Properties ###
+application.properties
 
 ### NetBeans ###
 /nbproject/private/

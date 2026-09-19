@@ -1,7 +1,7 @@
 $sidebar-bg: #14181f;
 $sidebar-largura: 240px;
 $azul: #2f7de1;
-$texto-inativo: #9ca3af;
+$inactive-text: #9ca3af;
 $texto-grupo: #6b7280;
 
 .app-shell {
@@ -18,7 +18,7 @@ $texto-grupo: #6b7280;
   padding: 16px 12px;
 }
 
-.marca {
+.brand {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -30,7 +30,7 @@ $texto-grupo: #6b7280;
   }
 }
 
-.marca-icone {
+.brand-icon {
   width: 28px;
   height: 28px;
   border-radius: 7px;
@@ -41,7 +41,7 @@ $texto-grupo: #6b7280;
   justify-content: center;
 }
 
-.marca-nome {
+.brand-name {
   color: #f3f4f6;
   font-size: 0.95rem;
   font-weight: 500;
@@ -53,7 +53,32 @@ $texto-grupo: #6b7280;
   flex-direction: column;
 }
 
-.grupo {
+.current-company {
+  padding: 10px;
+  margin: 6px 0 10px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    color: $texto-grupo;
+    font-size: 0.7rem;
+  }
+}
+
+.company-select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  background-color: #202631;
+  color: #e5e7eb;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+}
+
+.group {
   font-size: 0.7rem;
   color: $texto-grupo;
   letter-spacing: 0.4px;
@@ -69,7 +94,7 @@ $texto-grupo: #6b7280;
   padding: 9px 10px;
   margin-bottom: 2px;
   border-radius: 7px;
-  color: $texto-inativo;
+  color: $inactive-text;
   font-size: 0.85rem;
   text-decoration: none;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -91,7 +116,7 @@ $texto-grupo: #6b7280;
   }
 }
 
-.item.ativo {
+.item.active {
   background-color: rgba(47, 125, 225, 0.16);
   color: #eaf1fb;
   font-weight: 500;
@@ -112,12 +137,12 @@ $texto-grupo: #6b7280;
   }
 }
 
-.desabilitado {
+.disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
 
-.rodape {
+.footer {
   margin-top: auto;
   padding: 14px 6px 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
@@ -140,24 +165,24 @@ $texto-grupo: #6b7280;
   font-weight: 500;
 }
 
-.usuario {
+.user {
   display: flex;
   flex-direction: column;
   line-height: 1.3;
   min-width: 0;
 }
 
-.usuario-nome {
+.user-name {
   color: #e5e7eb;
   font-size: 0.75rem;
 }
 
-.usuario-papel {
+.user-role {
   color: $texto-grupo;
   font-size: 0.7rem;
 }
 
-.sair {
+.logout {
   margin-left: auto;
   color: $texto-grupo;
   display: flex;
@@ -176,7 +201,7 @@ $texto-grupo: #6b7280;
   }
 }
 
-.conteudo {
+.content {
   flex: 1;
   min-width: 0;
   background-color: #f7f8fa;
@@ -198,16 +223,17 @@ $texto-grupo: #6b7280;
     gap: 4px;
   }
 
-  .grupo,
-  .rodape {
+  .group,
+  .current-company,
+  .footer {
     display: none;
   }
 
-  .item.ativo::before {
+  .item.active::before {
     display: none;
   }
 
-  .conteudo {
+  .content {
     padding: 20px 16px;
   }
 }

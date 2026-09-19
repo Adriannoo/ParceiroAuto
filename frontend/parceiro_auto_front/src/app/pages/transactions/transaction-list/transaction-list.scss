@@ -1,0 +1,178 @@
+$azul: #2f7de1;
+$verde: #0f6e56;
+$vermelho: #a32d2d;
+$texto-fraco: #6b7280;
+$borda: #e5e7eb;
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search {
+  max-width: 300px;
+}
+
+.filter-select {
+  max-width: 220px;
+}
+
+.btn-group .btn.active {
+  background-color: $azul;
+  border-color: $azul;
+  color: #ffffff;
+}
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.table > :not(caption) > * > * {
+  padding: 13px 16px;
+}
+
+thead th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #4a4a4a;
+}
+
+.description {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.account {
+  display: block;
+  font-size: 0.72rem;
+  color: $texto-fraco;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background-color: #f1f2f4;
+  color: #444441;
+}
+
+.income-tag {
+  background-color: #e1f5ee;
+  color: $verde;
+}
+
+.expense-tag {
+  background-color: #fde8e8;
+  color: $vermelho;
+}
+
+.table-footer {
+  padding: 12px 16px;
+  border-top: 1px solid $borda;
+  font-size: 0.8rem;
+  color: $texto-fraco;
+  background-color: #fafafa;
+}
+
+.recurrence-card {
+  .card-body {
+    padding: 16px;
+  }
+}
+
+.recurrence-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.empty-recurring {
+  color: $texto-fraco;
+  font-size: 0.9rem;
+  padding: 10px 0 2px;
+}
+
+.recurrence-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recurrence-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid $borda;
+  border-radius: 10px;
+  background-color: #fafafa;
+}
+
+.recurrence-meta {
+  color: $texto-fraco;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.recurrence-value {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+  white-space: nowrap;
+
+  span {
+    font-size: 0.75rem;
+    color: $texto-fraco;
+  }
+
+  &.income strong {
+    color: $verde;
+  }
+
+  &.expense strong {
+    color: $vermelho;
+  }
+}
+
+.recurrence-actions {
+  display: flex;
+  gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .recurrence-item {
+    grid-template-columns: 1fr;
+  }
+
+  .recurrence-value {
+    text-align: left;
+  }
+}
+
+td.income {
+  color: $verde;
+  font-weight: 600;
+}
+
+td.expense {
+  color: $vermelho;
+  font-weight: 600;
+}

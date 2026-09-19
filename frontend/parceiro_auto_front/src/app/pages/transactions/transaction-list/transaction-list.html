@@ -1,0 +1,264 @@
+<div class="page-header">
+  <div>
+    <h2 class="mb-1">Movimentações</h2>
+    <small class="text-muted">
+      {{ filtered().length }} {{ filtered().length === 1 ? 'lançamento encontrado' : 'lançamentos encontrados' }}
+    </small>
+  </div>
+  <a routerLink="/transactions/new" class="btn btn-primary text-nowrap">Nova movimentação</a>
+</div>
+
+<div class="filters">
+  <input
+    type="search"
+    class="form-control search"
+    placeholder="Buscar por descrição, empresa, categoria ou conta"
+    [ngModel]="searchTerm()"
+    (ngModelChange)="searchTerm.set($event)" />
+
+  <select
+    class="form-select filter-select"
+    [ngModel]="companyId()"
+    (ngModelChange)="onCompanyFilterChange($event)">
+    <option value="all">Todas as empresas</option>
+    @for (company of companies(); track company.id) {
+      <option [ngValue]="company.id">{{ company.tradeName }}</option>
+    }
+  </select>
+
+  <div class="btn-group" role="group" aria-label="Filtrar por tipo">
+    <button type="button" class="btn btn-outline-secondary"
+      [class.active]="type() === 'all'" (click)="type.set('all')">Todas</button>
+    <button type="button" class="btn btn-outline-secondary"
+      [class.active]="type() === 'ENTRADA'" (click)="type.set('ENTRADA')">Entradas</button>
+    <button type="button" class="btn btn-outline-secondary"
+      [class.active]="type() === 'SAIDA'" (click)="type.set('SAIDA')">Saídas</button>
+  </div>
+
+  @if (hasFilters()) {
+    <button type="button" class="btn btn-link" (click)="clearFilters()">Limpar filtros</button>
+  }
+</div>
+
+<div class="card recurrence-card mb-3">
+  <div class="card-body">
+    <div class="recurrence-header">
+      <div>
+        <h5 class="mb-1">Recorrências</h5>
+        <small class="text-muted">Gerencie contas que repetem automaticamente, como aluguel, internet ou conta de luz.</small>
+      </div>
+    </div>
+
+    @if (companyId() === 'all') {
+      <div class="empty-recurring">Selecione uma empresa no filtro para gerenciar as recorrências dela.</div>
+    } @else if (loadingRecurring()) {
+      <div class="text-muted py-2">Carregando recorrências...</div>
+    } @else if (recurringTransactions().length === 0) {
+      <div class="empty-recurring">Esta empresa ainda não tem movimentações recorrentes.</div>
+    } @else {
+      <div class="recurrence-list">
+        @for (recurrence of recurringTransactions(); track recurrence.recurrenceRuleId) {
+          <div class="recurrence-item">
+            <div>
+              <strong>{{ recurrence.description }}</strong>
+              <div class="recurrence-meta">
+                {{ recurrenceFrequencyLabel(recurrence.frequency) }} · próxima em {{ formatDate(recurrence.nextDate) }} ·
+                {{ recurrence.endDate ? 'até ' + formatDate(recurrence.endDate) : 'sem data final' }}
+              </div>
+            </div>
+
+            <div class="recurrence-value" [class.income]="recurrence.type === 'ENTRADA'" [class.expense]="recurrence.type === 'SAIDA'">
+              <span>{{ recurrenceTypeLabel(recurrence) }}</span>
+              <strong>{{ recurrence.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(recurrence.value) }}</strong>
+            </div>
+
+            <div class="recurrence-actions">
+              <button type="button" class="btn btn-sm btn-outline-primary" (click)="openRecurrenceEdit(recurrence)">Editar</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="openRecurrenceDelete(recurrence)">Encerrar</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (loading()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Carregando</span>
+        </div>
+      </div>
+    } @else if (recentTransactions().length === 0) {
+      <div class="text-center py-5 px-3">
+        <p class="text-muted mb-3">
+          {{ transactions().length === 0
+            ? 'Nenhuma movimentação lançada ainda.'
+            : 'Nenhuma movimentação corresponde aos filtros.' }}
+        </p>
+
+        @if (transactions().length === 0) {
+          <a routerLink="new" class="btn btn-primary">Lançar movimentação</a>
+        } @else {
+          <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">
+            Limpar filtros
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Empresa</th>
+              <th>Categoria</th>
+              <th>Tipo</th>
+              <th>Forma</th>
+              <th class="text-end">Valor</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of recentTransactions(); track m.id) {
+              <tr>
+                <td class="text-nowrap">{{ formatDate(m.date) }}</td>
+                <td>
+                  <span class="description">{{ m.description }}</span>
+                  <small class="account">{{ accountName(m) }}</small>
+                </td>
+                <td>{{ companyName(m.companyId) }}</td>
+                <td><span class="tag">{{ categoryName(m) }}</span></td>
+                <td>
+                  <span class="tag" [class.income-tag]="m.type === 'ENTRADA'" [class.expense-tag]="m.type === 'SAIDA'">
+                    {{ transactionTypeLabel(m) }}
+                  </span>
+                </td>
+                <td>{{ paymentMethodLabel(m) }}</td>
+                <td class="text-end text-nowrap" [class.income]="m.type === 'ENTRADA'"
+                    [class.expense]="m.type === 'SAIDA'">
+                  {{ m.type === 'ENTRADA' ? '+' : '−' }} {{ formatCurrency(m.value) }}
+                </td>
+                <td class="text-end text-nowrap">
+                  <a [routerLink]="[m.id, 'edit']" class="btn btn-sm btn-outline-primary me-1">Editar</a>
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                    (click)="openConfirmation(m)">Excluir</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (filtered().length > recentTransactions().length) {
+        <div class="table-footer">
+          Exibindo os 10 lançamentos mais recentes. Use os filtros para encontrar movimentações específicas.
+        </div>
+      }
+    }
+  </div>
+</div>
+
+@if (recurrenceToEdit(); as recurrence) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form [formGroup]="recurrenceForm" (ngSubmit)="saveRecurrence()" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title">Editar recorrência</h5>
+            <button type="button" class="btn-close" [disabled]="savingRecurrence()" (click)="closeRecurrenceEdit()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted">
+              {{ recurrence.description }} · {{ formatCurrency(recurrence.value) }}
+            </p>
+
+            <div class="mb-3">
+              <label class="form-label" for="frequency">Frequência</label>
+              <select id="frequency" class="form-select" formControlName="frequency">
+                @for (frequency of recurrenceFrequencies; track frequency.value) {
+                  <option [value]="frequency.value">{{ frequency.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="endDate">Repetir até (opcional)</label>
+              <input id="endDate" type="date" class="form-control" formControlName="endDate" />
+              <small class="text-muted">Deixe vazio para repetir sem data final.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" [disabled]="savingRecurrence()" (click)="closeRecurrenceEdit()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="savingRecurrence()">
+              @if (savingRecurrence()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+              }
+              Salvar recorrência
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
+
+@if (recurrenceToDelete(); as recurrence) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Encerrar recorrência</h5>
+          <button type="button" class="btn-close" [disabled]="savingRecurrence()" (click)="closeRecurrenceDelete()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Encerrar a recorrência de <strong>{{ recurrence.description }}</strong>?
+            A movimentação original continua cadastrada, só deixa de repetir.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" [disabled]="savingRecurrence()" (click)="closeRecurrenceDelete()">Cancelar</button>
+          <button type="button" class="btn btn-danger" [disabled]="savingRecurrence()" (click)="confirmRecurrenceDelete()">
+            @if (savingRecurrence()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Encerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
+
+@if (transactionToDelete(); as m) {
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Excluir movimentação</h5>
+          <button type="button" class="btn-close" (click)="closeConfirmation()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Excluir <strong>{{ m.description }}</strong> no valor de {{ formatCurrency(m.value) }}?
+            Essa ação não pode ser desfeita.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeConfirmation()">Cancelar</button>
+          <button type="button" class="btn btn-danger" (click)="confirmDeletion()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}

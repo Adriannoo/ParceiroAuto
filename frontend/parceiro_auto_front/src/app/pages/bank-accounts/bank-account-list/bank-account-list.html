@@ -1,0 +1,166 @@
+<div class="page-header">
+  <div>
+    <h2 class="mb-1">Contas bancárias</h2>
+    <small class="text-muted">
+      {{ bankAccounts().length }} {{ bankAccounts().length === 1 ? 'conta' : 'contas' }} ·
+      {{ totalDefault() }} {{ totalDefault() === 1 ? 'padrão' : 'padrões' }}
+    </small>
+  </div>
+
+  <a routerLink="new" class="btn btn-primary text-nowrap">Nova conta</a>
+</div>
+
+<div class="filters">
+  <select
+    class="form-select company-select"
+    [ngModel]="selectedCompanyId()"
+    (ngModelChange)="onCompanyChange($event)"
+    [disabled]="loadingCompanies() || companies().length === 0">
+    @if (companies().length === 0) {
+      <option [ngValue]="null">Nenhuma empresa cadastrada</option>
+    }
+
+    @for (company of companies(); track company.id) {
+      <option [ngValue]="company.id">{{ company.tradeName || company.legalName }}</option>
+    }
+  </select>
+
+  <input
+    type="search"
+    class="form-control search"
+    placeholder="Buscar por banco, agência ou conta"
+    [ngModel]="searchTerm()"
+    (ngModelChange)="searchTerm.set($event)"/>
+
+  <select class="form-select filter-select" [ngModel]="accountType()" (ngModelChange)="accountType.set($event)">
+    <option value="all">Todos os tipos</option>
+    @for (type of accountTypes; track type.value) {
+      <option [value]="type.value">{{ type.label }}</option>
+    }
+  </select>
+
+  @if (hasFilters()) {
+    <button type="button" class="btn btn-link" (click)="clearFilters()">Limpar filtros</button>
+  }
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (loading() || loadingCompanies()) {
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Carregando</span>
+        </div>
+      </div>
+    } @else if (companies().length === 0) {
+      <div class="text-center py-5 px-3">
+        <p class="text-muted mb-3">Cadastre uma empresa antes de cadastrar contas bancárias.</p>
+        <a routerLink="/companies/new" class="btn btn-primary">Cadastrar empresa</a>
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="text-center py-5 px-3">
+        <p class="text-muted mb-3">
+          {{
+            bankAccounts().length === 0
+              ? 'Nenhuma conta bancária cadastrada para esta empresa.'
+              : 'Nenhuma conta corresponde aos filtros.'
+          }}
+        </p>
+
+        @if (bankAccounts().length === 0) {
+          <a routerLink="new" class="btn btn-primary">Cadastrar primeira conta</a>
+        } @else {
+          <button type="button" class="btn btn-outline-secondary" (click)="clearFilters()">
+            Limpar filtros
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+          <tr>
+            <th>Banco</th>
+            <th>Agência</th>
+            <th>Conta</th>
+            <th>Tipo</th>
+            <th>Saldo</th>
+            <th>Padrão</th>
+            <th class="text-end">Ações</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (account of filtered(); track account.id) {
+              <tr>
+                <td>
+                  <span class="bank-name">{{ account.bankName }}</span>
+                  <small class="bank-company">{{ companyName(account) }}</small>
+                </td>
+                <td>{{ account.branch }}</td>
+                <td>{{ account.accountNumber }}</td>
+                <td><span class="tag">{{ accountTypeLabel(account) }}</span></td>
+                <td>{{ account.balance | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+                <td>
+                  @if (account.defaultAccount) {
+                    <span class="status-badge">
+                      Conta padrão
+                    </span>
+                  } @else {
+                    <span class="status-badge off">
+                      Não padrão
+                    </span>
+                  }
+                </td>
+                <td class="text-end text-nowrap">
+                  @if (!account.defaultAccount) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-secondary me-1"
+                      [disabled]="settingDefaultId() !== null"
+                      (click)="setDefault(account)">
+                      {{ settingDefaultId() === account.id ? 'Definindo...' : 'Definir padrão' }}
+                    </button>
+                  }
+                  <a
+                    [routerLink]="[account.id, 'edit']"
+                    [queryParams]="{ companyId: account.companyId }"
+                    class="btn btn-sm btn-outline-primary me-1">
+                    Editar
+                  </a>
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                          (click)="openConfirmation(account)">Excluir
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+@if (bankAccountToDelete(); as account) {
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Excluir conta bancária</h5>
+          <button type="button" class="btn-close" (click)="closeConfirmation()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Excluir a conta <strong>{{ account.bankName }} - {{ account.accountNumber }}</strong>?
+            Essa ação não pode ser desfeita.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeConfirmation()">Cancelar</button>
+          <button type="button" class="btn btn-danger" (click)="confirmDeletion()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
