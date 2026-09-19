@@ -1,6 +1,6 @@
 package br.edu.uniamerica.parceiro_auto.controller.dto.mapper;
 
-import br.edu.uniamerica.parceiro_auto.controller.dto.BankAccountResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.bankaccount.BankAccountResponseDTO;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 
 public class BankAccountMapper {

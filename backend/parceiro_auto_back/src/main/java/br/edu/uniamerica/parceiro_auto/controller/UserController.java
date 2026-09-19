@@ -1,16 +1,21 @@
 package br.edu.uniamerica.parceiro_auto.controller;
 
 import br.edu.uniamerica.parceiro_auto.controller.dto.ApiResponse;
-import br.edu.uniamerica.parceiro_auto.controller.dto.UserRequestDTO;
-import br.edu.uniamerica.parceiro_auto.controller.dto.UserResponseDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.user.UserRequestDTO;
+import br.edu.uniamerica.parceiro_auto.controller.dto.user.UserResponseDTO;
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.UserMapper;
 import br.edu.uniamerica.parceiro_auto.entity.User;
+import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+@Tag(name = "Usuários")
 @RestController
 @RequestMapping("api/users")
 public class UserController {
@@ -24,7 +29,9 @@ public class UserController {
     // Queremos devolver 201 CREATED, que e o status correto para criacao.
     // POST localhost:8080/api/users
     @PostMapping
-    public ResponseEntity<ApiResponse<UserResponseDTO>> create(@RequestBody UserRequestDTO dto) {
+    @Operation(summary = "Cadastrar usuário")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
+    public ResponseEntity<ApiResponse<UserResponseDTO>> create(@Valid @RequestBody UserRequestDTO dto) {
         User user = userService.createUser(dto.login(), dto.password());
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -35,7 +42,8 @@ public class UserController {
     // Queremos devolver 200 OK, que e o status generico para sucesso.
     // POST localhost:8080/api/users/login
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserResponseDTO>> authenticate(@RequestBody UserRequestDTO dto) {
+    @Operation(summary = "Autenticar usuário")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> authenticate(@Valid @RequestBody UserRequestDTO dto) {
         User user = userService.authenticate(dto.login(), dto.password());
 
         if (user == null) {
@@ -49,10 +57,11 @@ public class UserController {
     // Queremos devolver 200 OK, que e o status generico para sucesso.
     // GET localhost:8080/api/users/{id}
     @GetMapping("/{id}")
+    @Operation(summary = "Buscar usuário por ID")
     public ResponseEntity<ApiResponse<UserResponseDTO>> findById(@PathVariable Long id) {
         User user = userService.findById(id)
                 .orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao econtrado!")
+                        () -> new ResourceNotFoundException("Usuario nao econtrado!")
                 );
 
         return ResponseEntity.ok(new ApiResponse<>("Usuario encontrado com sucesso!", UserMapper.toResponseDTO(user)));
@@ -62,11 +71,12 @@ public class UserController {
     // Queremos devolver 200 OK, que e o status generico para sucesso.
     // GET localhost:8080/api/users?login={login}
     @GetMapping
+    @Operation(summary = "Buscar usuário por login")
     public ResponseEntity<ApiResponse<UserResponseDTO>> findByLogin(@RequestParam String login) {
         User user = userService.findByLogin(login);
 
         if(user == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado!");
+            throw new ResourceNotFoundException("Usuario nao encontrado!");
         }
 
         return ResponseEntity.ok(new ApiResponse<>("Usuario encontrado com sucesso!", UserMapper.toResponseDTO(user)));

@@ -5,16 +5,17 @@ import { RegisterComponent } from './components/register/register.component';
 import { Layout } from './components/layout/layout';
 
 import { Dashboard } from './pages/dashboard/dashboard';
-import { Conta } from './pages/conta/conta';
-import { Relatorios } from './pages/relatorios/relatorios';
-import { GestaoAcessos } from './pages/gestao-acessos/gestao-acessos';
+import { Reports } from './pages/reports/reports';
 
-import { EmpresaLista } from './pages/empresa/empresa-lista/empresa-lista';
-import { EmpresaForm } from './pages/empresa/empresa-form/empresa-form';
-import { EmpresaLancamentos } from './pages/empresa/empresa-lancamentos/empresa-lancamentos';
+import { CompanyList } from './pages/companies/company-list/company-list';
+import { CompanyForm } from './pages/companies/company-form/company-form';
+import { CompanyCategories } from './pages/companies/company-categories/company-categories';
+import { CompanyTransactions } from './pages/companies/company-transactions/company-transactions';
+import { BankAccountList } from './pages/bank-accounts/bank-account-list/bank-account-list';
+import { BankAccountForm } from './pages/bank-accounts/bank-account-form/bank-account-form';
 
-import { MovimentacaoLista } from './pages/movimentacao/movimentacao-lista/movimentacao-lista';
-import { MovimentacaoForm } from './pages/movimentacao/movimentacao-form/movimentacao-form';
+import { TransactionList } from './pages/transactions/transaction-list/transaction-list';
+import { TransactionForm } from './pages/transactions/transaction-form/transaction-form';
 import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -30,29 +31,37 @@ export const routes: Routes = [
       { path: 'dashboard', component: Dashboard, title: 'Visão geral' },
 
       {
-        path: 'empresas',
+        path: 'companies',
         children: [
-          { path: '', component: EmpresaLista, title: 'Empresas' },
-          { path: 'nova', component: EmpresaForm, title: 'Nova empresa' },
-          { path: ':id/editar', component: EmpresaForm, title: 'Editar empresa' },
-          { path: ':id/lancamentos', component: EmpresaLancamentos, title: 'Lançamentos da empresa' },
+          { path: '', component: CompanyList, title: 'Empresas' },
+          { path: 'new', component: CompanyForm, title: 'Nova empresa' },
+          { path: ':id/edit', component: CompanyForm, title: 'Editar empresa' },
+          { path: ':id/categories', component: CompanyCategories, title: 'Categorias da empresa' },
+          { path: ':id/transactions', component: CompanyTransactions, title: 'Lançamentos da empresa' },
           { path: '**', redirectTo: '' },
         ],
       },
 
       {
-        path: 'lancamentos',
+        path: 'transactions',
         children: [
-          { path: '', component: MovimentacaoLista, title: 'Lançamentos' },
-          { path: 'novo', component: MovimentacaoForm, title: 'Novo lançamento' },
-          { path: ':id/editar', component: MovimentacaoForm, title: 'Editar lançamento' },
+          { path: '', component: TransactionList, title: 'Lançamentos' },
+          { path: 'new', component: TransactionForm, title: 'Novo lançamento' },
+          { path: ':id/edit', component: TransactionForm, title: 'Editar lançamento' },
           { path: '**', redirectTo: '' },
         ],
       },
 
-      { path: 'conta', component: Conta },
-      { path: 'relatorios', component: Relatorios },
-      { path: 'gestao-acessos', component: GestaoAcessos },
+      {
+        path: 'bank-accounts',
+        children: [
+          { path: '', component: BankAccountList, title: 'Contas bancárias' },
+          { path: 'new', component: BankAccountForm, title: 'Nova conta bancária' },
+          { path: ':id/edit', component: BankAccountForm, title: 'Editar conta bancária' },
+          { path: '**', redirectTo: '' },
+        ],
+      },
+      { path: 'reports', component: Reports },
     ],
   },
 ];

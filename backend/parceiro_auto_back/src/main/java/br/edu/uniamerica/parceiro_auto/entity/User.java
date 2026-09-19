@@ -19,7 +19,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString(exclude = "userCompanies")
+@ToString(exclude = {"userCompanies", "password"})
 @EqualsAndHashCode(of = "id")
 @Entity
 @Table(name = "app_user")
@@ -31,7 +31,7 @@ public class User {
   @Column(nullable = false, unique = true, length = 50)
   private String login;
 
-  @Column(nullable = false, length = 100)
+  @Column(nullable = false, length = 255)
   private String password;
 
   @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)

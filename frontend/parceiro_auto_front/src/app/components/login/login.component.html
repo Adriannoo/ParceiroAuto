@@ -8,13 +8,13 @@
       Use o e-mail corporativo e a senha cadastrada para acessar o painel.
     </p>
 
-    <div *ngIf="erro(); else semErro" class="aviso-erro">
-      <p>{{ erro() }}</p>
-      <button type="button" class="btn-fechar" (click)="limparErro()">✕</button>
+    <div *ngIf="error(); else noError" class="error-banner">
+      <p>{{ error() }}</p>
+      <button type="button" class="close-button" (click)="clearError()">✕</button>
     </div>
-    <ng-template #semErro></ng-template>
+    <ng-template #noError></ng-template>
 
-    <form (ngSubmit)="login()" class="formulario">
+    <form (ngSubmit)="login()" class="form">
       <div class="field-group">
         <label for="email">E-mail</label>
         <input
@@ -23,7 +23,7 @@
           placeholder="nome@empresa.com"
           [(ngModel)]="email"
           name="email"
-          [disabled]="carregando()"
+          [disabled]="loading()"
         />
       </div>
 
@@ -33,18 +33,18 @@
           id="password"
           type="password"
           placeholder="Sua senha"
-          [(ngModel)]="senha"
-          name="senha"
-          [disabled]="carregando()"
+          [(ngModel)]="password"
+          name="password"
+          [disabled]="loading()"
         />
       </div>
 
-      <button type="submit" class="login-btn" [disabled]="carregando()">
-        {{ carregando() ? 'Entrando...' : 'Entrar' }}
+      <button type="submit" class="login-btn" [disabled]="loading()">
+        {{ loading() ? 'Entrando...' : 'Entrar' }}
       </button>
     </form>
 
-    <button type="button" class="register-btn" routerLink="/register" [disabled]="carregando()">
+    <button type="button" class="register-btn" routerLink="/register" [disabled]="loading()">
       Cadastrar
     </button>
 

@@ -1,0 +1,150 @@
+<div class="page-header">
+  <div>
+    <h2 class="mb-1">Categorias de {{ company()?.tradeName ?? 'empresa' }}</h2>
+    <small class="text-muted">Crie, edite ou exclua categorias usadas nas movimentacoes desta empresa.</small>
+  </div>
+
+  <div class="actions">
+    <a routerLink="/companies" class="btn btn-light text-nowrap">Voltar</a>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Carregando</span>
+    </div>
+  </div>
+} @else {
+  <div class="columns">
+    <section class="card">
+      <div class="card-body">
+        <div class="section-header">
+          <h3>Entradas</h3>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="openCreateModal('ENTRADA')">Adicionar</button>
+        </div>
+
+        @if (incomeCategories().length === 0) {
+          <p class="text-muted mb-0">Nenhuma categoria de entrada cadastrada.</p>
+        } @else {
+          <ul class="category-list">
+            @for (category of incomeCategories(); track category.id) {
+              <li>
+                <span>{{ category.name }}</span>
+                <span class="category-actions">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="openEditModal(category)">Editar</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="openConfirmation(category)">Excluir</button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-body">
+        <div class="section-header">
+          <h3>Saidas</h3>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="openCreateModal('SAIDA')">Adicionar</button>
+        </div>
+
+        @if (expenseCategories().length === 0) {
+          <p class="text-muted mb-0">Nenhuma categoria de saida cadastrada.</p>
+        } @else {
+          <ul class="category-list">
+            @for (category of expenseCategories(); track category.id) {
+              <li>
+                <span>{{ category.name }}</span>
+                <span class="category-actions">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="openEditModal(category)">Editar</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="openConfirmation(category)">Excluir</button>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  </div>
+}
+
+@if (categoryModalOpen()) {
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form [formGroup]="form" (ngSubmit)="saveCategory()" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title">{{ categoryBeingEdited() ? 'Editar categoria' : 'Nova categoria' }}</h5>
+            <button type="button" class="btn-close" [disabled]="saving()" (click)="closeCategoryModal()"></button>
+          </div>
+
+          <div class="modal-body">
+            @if (error()) {
+              <div class="alert alert-danger">{{ error() }}</div>
+            }
+
+            <div class="mb-3">
+              <label class="form-label" for="categoryName">Nome</label>
+              <input id="categoryName" type="text" class="form-control" formControlName="name" [class.is-invalid]="isInvalid('name')" />
+              @if (isInvalid('name')) {
+                <div class="invalid-feedback d-block">Informe um nome com pelo menos 3 caracteres.</div>
+              }
+            </div>
+
+            @if (categoryBeingEdited()) {
+              <div class="mb-3">
+                <label class="form-label" for="categoryType">Tipo</label>
+                <select id="categoryType" class="form-select" formControlName="type">
+                  <option value="ENTRADA">Entrada</option>
+                  <option value="SAIDA">Saida</option>
+                </select>
+              </div>
+            } @else {
+              <div class="category-type-preview">
+                Tipo: <strong>{{ form.controls.type.value === 'ENTRADA' ? 'Entrada' : 'Saida' }}</strong>
+              </div>
+            }
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" [disabled]="saving()" (click)="closeCategoryModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+              }
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
+
+@if (categoryToDelete(); as category) {
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Excluir categoria</h5>
+          <button type="button" class="btn-close" (click)="closeConfirmation()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Excluir <strong>{{ category.name }}</strong>? Ela deixa de aparecer para novos lancamentos,
+            mas movimentacoes antigas continuam preservadas.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" (click)="closeConfirmation()">Cancelar</button>
+          <button type="button" class="btn btn-danger" (click)="confirmDeletion()">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop fade show"></div>
+}
