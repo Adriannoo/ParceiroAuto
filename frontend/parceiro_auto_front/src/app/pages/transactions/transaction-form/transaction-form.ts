@@ -15,6 +15,7 @@ import {
   TransactionType,
 } from '../transaction.model';
 import { TransactionService } from '../transaction.service';
+import { TransactionCategoryService } from '../transaction-category.service';
 
 @Component({
   selector: 'app-transaction-form',
@@ -25,6 +26,7 @@ import { TransactionService } from '../transaction.service';
 export class TransactionForm implements OnInit {
   private fb = inject(FormBuilder);
   private transactionService = inject(TransactionService);
+  private categoryService = inject(TransactionCategoryService);
   private companyService = inject(CompanyService);
   private bankAccountService = inject(BankAccountService);
   private currentCompanyService = inject(CurrentCompanyService);
@@ -165,7 +167,7 @@ export class TransactionForm implements OnInit {
       },
     });
 
-    this.transactionService.listCategoriesByCompany(companyId).subscribe({
+    this.categoryService.listCategoriesByCompany(companyId).subscribe({
       next: (categories) => {
         this.categories.set(categories);
 
@@ -224,7 +226,7 @@ export class TransactionForm implements OnInit {
 
     this.savingCategory.set(true);
 
-    this.transactionService.createCategory(companyId, { name, type }).subscribe({
+    this.categoryService.createCategory(companyId, { name, type }).subscribe({
       next: (category) => {
         const categories = [
           ...this.categories().filter((item) => item.id !== category.id),

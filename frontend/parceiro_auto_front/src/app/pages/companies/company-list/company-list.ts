@@ -35,6 +35,7 @@ export class CompanyList implements OnInit {
   sortDirection = signal<SortDirection>('asc');
 
   companyToDelete = signal<Company | null>(null);
+  deleting = signal(false);
 
   filtered = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -120,19 +121,43 @@ export class CompanyList implements OnInit {
   }
 
   closeConfirmation(): void {
-    this.companyToDelete.set(null);
-  }
-
-  confirmDeletion(): void {
-    const company = this.companyToDelete();
-
-    if (!company) {
+    if (this.deleting()) {
       return;
     }
 
-    this.companyService.delete(company.id).subscribe(() => {
-      this.closeConfirmation();
-      this.load();
+    this.companyToDelete.set(null);
+  }
+
+  async confirmDeletion(): Promise<void> {
+    const company = this.companyToDelete();
+
+    if (!company || this.deleting()) {
+      return;
+    }
+
+    // Carrega o alerta apenas quando a exclusao for utilizada.
+    const { default: Swal } = await import('sweetalert2');
+    if (this.deleting() || this.companyToDelete() !== company) {
+      return;
+    }
+
+    this.deleting.set(true);
+    this.companyService.delete(company.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.closeConfirmation();
+        this.load();
+        void Swal.fire({ title: 'Empresa excluida', icon: 'success', confirmButtonText: 'OK' });
+      },
+      error: () => {
+        this.deleting.set(false);
+        void Swal.fire({
+          title: 'Nao foi possivel excluir',
+          text: 'Verifique os vinculos da empresa e tente novamente.',
+          icon: 'error',
+          confirmButtonText: 'OK',
+        });
+      },
     });
   }
 }
