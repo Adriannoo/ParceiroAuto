@@ -16,6 +16,8 @@ import {
   paymentMethodLabel,
 } from '../transaction.model';
 import { TransactionService } from '../transaction.service';
+import { RecurrenceRuleService } from '../recurrence-rule.service';
+import { TransactionCategoryService } from '../transaction-category.service';
 
 type TypeFilter = 'all' | TransactionType;
 
@@ -28,6 +30,8 @@ type TypeFilter = 'all' | TransactionType;
 export class TransactionList implements OnInit {
   private fb = inject(FormBuilder);
   private transactionService = inject(TransactionService);
+  private recurrenceService = inject(RecurrenceRuleService);
+  private categoryService = inject(TransactionCategoryService);
   private companyService = inject(CompanyService);
   private bankAccountService = inject(BankAccountService);
   private currentCompanyService = inject(CurrentCompanyService);
@@ -103,7 +107,7 @@ export class TransactionList implements OnInit {
 
         return forkJoin({
           bankAccounts: forkJoin(companies.map((company) => this.bankAccountService.listByCompany(company.id))),
-          categories: forkJoin(companies.map((company) => this.transactionService.listCategoriesByCompany(company.id))),
+          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id))),
         });
       }),
     ).subscribe({
@@ -127,7 +131,7 @@ export class TransactionList implements OnInit {
 
     this.loadingRecurring.set(true);
 
-    this.transactionService.listRecurringByCompany(companyId).subscribe({
+    this.recurrenceService.listRecurringByCompany(companyId).subscribe({
       next: (items) => {
         this.recurringTransactions.set(items);
         this.loadingRecurring.set(false);
@@ -253,7 +257,7 @@ export class TransactionList implements OnInit {
     const data = this.recurrenceForm.getRawValue();
     this.savingRecurrence.set(true);
 
-    this.transactionService.updateRecurrence(recurrence.recurrenceRuleId, {
+    this.recurrenceService.updateRecurrence(recurrence.recurrenceRuleId, {
       frequency: data.frequency ?? 'MONTHLY',
       endDate: data.endDate || null,
     }).subscribe({
@@ -287,7 +291,7 @@ export class TransactionList implements OnInit {
 
     this.savingRecurrence.set(true);
 
-    this.transactionService.deleteRecurrence(recurrence.recurrenceRuleId).subscribe({
+    this.recurrenceService.deleteRecurrence(recurrence.recurrenceRuleId).subscribe({
       next: () => {
         this.recurrenceToDelete.set(null);
         this.savingRecurrence.set(false);

@@ -12,6 +12,7 @@ import {
   taxRegimeLabel,
 } from '../company.model';
 import { TransactionService } from '../../transactions/transaction.service';
+import { TransactionCategoryService } from '../../transactions/transaction-category.service';
 import { Transaction, TransactionCategory, paymentMethodLabel } from '../../transactions/transaction.model';
 
 @Component({
@@ -23,6 +24,7 @@ import { Transaction, TransactionCategory, paymentMethodLabel } from '../../tran
 export class CompanyTransactions implements OnInit {
   private companyService = inject(CompanyService);
   private transactionService = inject(TransactionService);
+  private categoryService = inject(TransactionCategoryService);
   private bankAccountService = inject(BankAccountService);
   private route = inject(ActivatedRoute);
 
@@ -59,7 +61,7 @@ export class CompanyTransactions implements OnInit {
       company: this.companyService.findById(id),
       transactions: this.transactionService.listByCompany(id),
       bankAccounts: this.bankAccountService.listByCompany(id),
-      categories: this.transactionService.listCategoriesByCompany(id),
+      categories: this.categoryService.listCategoriesByCompany(id),
     }).subscribe({
       next: ({ company, transactions, bankAccounts, categories }) => {
         this.company.set(company);

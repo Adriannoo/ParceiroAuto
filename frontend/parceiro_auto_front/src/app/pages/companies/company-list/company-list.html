@@ -130,17 +130,18 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Excluir empresa</h5>
-          <button type="button" class="btn-close" (click)="closeConfirmation()"></button>
+          <button type="button" class="btn-close" [disabled]="deleting()" (click)="closeConfirmation()" aria-label="Fechar"></button>
         </div>
         <div class="modal-body">
           <p class="mb-0">
-            Excluir <strong>{{ company.legalName }}</strong>? Os lançamentos vinculados
-            ficarão sem empresa. Essa ação não pode ser desfeita.
+            Excluir <strong>{{ company.legalName }}</strong>? Essa ação não pode ser desfeita.
           </p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" (click)="closeConfirmation()">Cancelar</button>
-          <button type="button" class="btn btn-danger" (click)="confirmDeletion()">Excluir</button>
+          <button type="button" class="btn btn-light" [disabled]="deleting()" (click)="closeConfirmation()">Cancelar</button>
+          <button type="button" class="btn btn-danger" [disabled]="deleting()" (click)="confirmDeletion()">
+            {{ deleting() ? 'Excluindo...' : 'Excluir' }}
+          </button>
         </div>
       </div>
     </div>

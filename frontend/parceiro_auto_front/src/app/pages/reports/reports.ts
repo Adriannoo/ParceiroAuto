@@ -14,6 +14,7 @@ import {
   paymentMethodLabel,
 } from '../transactions/transaction.model';
 import { TransactionService } from '../transactions/transaction.service';
+import { TransactionCategoryService } from '../transactions/transaction-category.service';
 
 type TypeFilter = 'all' | TransactionType;
 type NumberFilter = number | 'all';
@@ -33,6 +34,7 @@ interface ReportColumn {
 })
 export class Reports implements OnInit {
   private transactionService = inject(TransactionService);
+  private categoryService = inject(TransactionCategoryService);
   private companyService = inject(CompanyService);
   private bankAccountService = inject(BankAccountService);
   private currentCompanyService = inject(CurrentCompanyService);
@@ -147,7 +149,7 @@ export class Reports implements OnInit {
 
         return forkJoin({
           bankAccounts: forkJoin(companies.map((company) => this.bankAccountService.listByCompany(company.id))),
-          categories: forkJoin(companies.map((company) => this.transactionService.listCategoriesByCompany(company.id))),
+          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id))),
         });
       }),
     ).subscribe({

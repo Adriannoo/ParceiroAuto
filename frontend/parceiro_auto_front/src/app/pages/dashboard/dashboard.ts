@@ -5,6 +5,8 @@ import { forkJoin, of, switchMap } from 'rxjs';
 import { CompanyService } from '../companies/company.service';
 import { Company } from '../companies/company.model';
 import { TransactionService } from '../transactions/transaction.service';
+import { RecurrenceRuleService } from '../transactions/recurrence-rule.service';
+import { TransactionCategoryService } from '../transactions/transaction-category.service';
 import { RecurringTransaction, Transaction, TransactionCategory } from '../transactions/transaction.model';
 import { CurrentCompanyService } from '../../services/current-company.service';
 
@@ -31,6 +33,8 @@ interface CategorySlice {
 export class Dashboard implements OnInit {
   private companyService = inject(CompanyService);
   private transactionService = inject(TransactionService);
+  private recurrenceService = inject(RecurrenceRuleService);
+  private categoryService = inject(TransactionCategoryService);
   private currentCompanyService = inject(CurrentCompanyService);
 
   companies = signal<Company[]>([]);
@@ -155,8 +159,8 @@ export class Dashboard implements OnInit {
         const currentCompanyId = this.companyId() ?? companies[0].id;
 
         return forkJoin({
-          categories: forkJoin(companies.map((company) => this.transactionService.listCategoriesByCompany(company.id))),
-          recurring: this.transactionService.listNextRecurringByCompany(currentCompanyId, 3),
+          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id))),
+          recurring: this.recurrenceService.listNextRecurringByCompany(currentCompanyId, 3),
         });
       }),
     ).subscribe({
@@ -190,7 +194,7 @@ export class Dashboard implements OnInit {
       return;
     }
 
-    this.transactionService.listNextRecurringByCompany(companyId, 3).subscribe({
+    this.recurrenceService.listNextRecurringByCompany(companyId, 3).subscribe({
       next: (recurring) => this.recurring.set(recurring),
       error: () => this.recurring.set([]),
     });

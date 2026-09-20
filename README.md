@@ -8,7 +8,7 @@ Projeto Integrador do semestre de Engenharia de Software: um sistema contábil c
 - **Banco:** PostgreSQL e Flyway; H2 nos testes de validação e documentação.
 - **Validação e documentação:** Jakarta Validation e springdoc 3.1.1 (OpenAPI / Swagger UI).
 - **Integração externa:** Spring Cloud OpenFeign para consulta de CNPJ na BrasilAPI.
-- **Front:** Angular 21, TypeScript e Bootstrap.
+- **Front:** Angular 21, TypeScript, Bootstrap e SweetAlert2.
 
 ## Organização
 
@@ -44,6 +44,10 @@ npm start
 ```
 
 Acesse `http://localhost:4200`.
+
+O frontend usa a API nas telas de negócio. O login ainda é simulado no navegador, com acesso de demonstração `gustavo@empresa.com` e senha `123456`; ele não utiliza o cadastro de usuários do backend.
+
+Veja o [guia do frontend](docs/frontend.md) para organização, services, modais, testes e pendências da entrega. Os services de lançamentos, categorias e recorrências estão separados. O SweetAlert2 informa o resultado da exclusão de empresas, preservando o modal de confirmação.
 
 ## Swagger e API
 
@@ -115,6 +119,8 @@ Na criação de movimentações, `@Validated(TransactionRequestDTO.Create.class)
 As anotações do Swagger documentam o contrato. As de validação verificam a entrada antes do controller executar sua lógica; as regras de negócio continuam nos services.
 
 ## Testes
+
+Na pasta do frontend, execute `npm test -- --watch=false` para os testes e `npm run build` para validar a compilação.
 
 Na pasta do back, execute `./mvnw.cmd test`. Os testes cobrem validações e documentação com H2 e services simulados, regras de movimentações e integração Feign com um servidor HTTP local, sem depender da BrasilAPI real.
 

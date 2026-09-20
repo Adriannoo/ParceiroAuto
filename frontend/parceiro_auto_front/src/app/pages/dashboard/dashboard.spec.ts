@@ -3,6 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { CompanyService } from '../companies/company.service';
 import { TransactionService } from '../transactions/transaction.service';
+import { RecurrenceRuleService } from '../transactions/recurrence-rule.service';
+import { TransactionCategoryService } from '../transactions/transaction-category.service';
 
 import { Dashboard } from './dashboard';
 
@@ -14,13 +16,13 @@ describe('Dashboard', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        { provide: RecurrenceRuleService, useValue: { listNextRecurringByCompany: () => of([]) } },
+        { provide: TransactionCategoryService, useValue: { listCategoriesByCompany: () => of([]) } },
         { provide: CompanyService, useValue: { list: () => of([]) } },
         {
           provide: TransactionService,
           useValue: {
             list: () => of([]),
-            listCategoriesByCompany: () => of([]),
-            listNextRecurringByCompany: () => of([]),
           },
         },
       ],

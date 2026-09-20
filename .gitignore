@@ -23,7 +23,28 @@
 hs_err_pid*
 replay_pid*
 
-frontend/node_modules/
+# Dependencias instaladas (manter package.json e package-lock.json no Git)
+node_modules/
+
+# Configuracoes locais (manter os exemplos)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+
+# Documentos gerados e arquivos temporarios na raiz
+/output/
+/tmp/
+
+# Relatorios de testes
+coverage/
+playwright-report/
+test-results/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
 
 # Local-only Docker/PostgreSQL setup
 docker-compose.local.yml

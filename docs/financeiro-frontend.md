@@ -29,12 +29,12 @@ A tela de movimentacoes foi integrada com a API pelo service:
 frontend/parceiro_auto_front/src/app/pages/transactions/transaction.service.ts
 ```
 
-O service chama:
+As chamadas agora estao separadas por responsabilidade:
 
 ```text
-http://localhost:8080/api/transactions
-http://localhost:8080/api/transaction-categories
-http://localhost:8080/api/recurrence-rules
+TransactionService -> /api/transactions
+TransactionCategoryService -> /api/transaction-categories
+RecurrenceRuleService -> /api/recurrence-rules
 ```
 
 Como o backend retorna `ApiResponse<T>`, os metodos usam `map(response => response.dados)` para entregar os dados diretamente aos componentes.
@@ -97,7 +97,7 @@ Quando marcada, o usuario escolhe a frequencia:
 - mensal;
 - anual.
 
-O campo `Repetir ate` e opcional. Quando fica vazio, a movimentacao se repete sem data final, o que atende casos como conta de luz ou aluguel.
+O campo `Repetir ate` e opcional. Quando fica vazio, a regra fica sem data final. A API consulta as proximas datas previstas, mas nao gera novos lancamentos automaticamente.
 
 A tela de movimentacoes tambem possui uma area de gerenciamento de recorrencias. Nela o usuario pode:
 

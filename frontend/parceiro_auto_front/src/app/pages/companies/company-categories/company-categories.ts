@@ -4,7 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Company } from '../company.model';
 import { CompanyService } from '../company.service';
 import { TransactionCategory, TransactionType } from '../../transactions/transaction.model';
-import { TransactionService } from '../../transactions/transaction.service';
+import { TransactionCategoryService } from '../../transactions/transaction-category.service';
 
 @Component({
   selector: 'app-company-categories',
@@ -16,7 +16,7 @@ export class CompanyCategories implements OnInit {
   private route = inject(ActivatedRoute);
   private fb = inject(FormBuilder);
   private companyService = inject(CompanyService);
-  private transactionService = inject(TransactionService);
+  private categoryService = inject(TransactionCategoryService);
 
   company = signal<Company | null>(null);
   categories = signal<TransactionCategory[]>([]);
@@ -47,7 +47,7 @@ export class CompanyCategories implements OnInit {
       next: (company) => this.company.set(company),
     });
 
-    this.transactionService.listCategoriesByCompany(companyId).subscribe({
+    this.categoryService.listCategoriesByCompany(companyId).subscribe({
       next: (categories) => {
         this.categories.set(categories);
         this.loading.set(false);
@@ -100,8 +100,8 @@ export class CompanyCategories implements OnInit {
     this.saving.set(true);
 
     const request = editing
-      ? this.transactionService.updateCategory(companyId, editing.id, payload)
-      : this.transactionService.createCategory(companyId, payload);
+      ? this.categoryService.updateCategory(companyId, editing.id, payload)
+      : this.categoryService.createCategory(companyId, payload);
 
     request.subscribe({
       next: () => {
@@ -136,7 +136,7 @@ export class CompanyCategories implements OnInit {
       return;
     }
 
-    this.transactionService.deleteCategory(category.companyId, category.id).subscribe(() => {
+    this.categoryService.deleteCategory(category.companyId, category.id).subscribe(() => {
       this.closeConfirmation();
       this.load();
     });
