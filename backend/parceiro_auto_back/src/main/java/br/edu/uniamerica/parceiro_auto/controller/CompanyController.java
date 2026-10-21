@@ -8,6 +8,8 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.CompanyMapper;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.CompanyService;
+import br.edu.uniamerica.parceiro_auto.service.CompanyAccessService;
+import jakarta.servlet.http.HttpServletRequest;
 
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,9 +26,11 @@ import java.util.List;
 public class CompanyController {
 
     private final CompanyService companyService;
+    private final CompanyAccessService companyAccessService;
 
-    public CompanyController(CompanyService companyService) {
+    public CompanyController(CompanyService companyService, CompanyAccessService companyAccessService) {
         this.companyService = companyService;
+        this.companyAccessService = companyAccessService;
     }
 
     // Metodos embrulados no "ApiResponse", padroniza o formato de resposta dos endpoints e facilita com o front
@@ -37,8 +41,8 @@ public class CompanyController {
     @PostMapping
     @Operation(summary = "Cadastrar empresa") // Define o resumo do endpoint, e o resumo do que faz. No caso Post de cadastrar empresa
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@Valid @RequestBody CompanyRequestDTO dto) {
-        Company company = companyService.createCompany(dto);
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> create(@Valid @RequestBody CompanyRequestDTO dto, HttpServletRequest request) {
+        Company company = companyService.createCompany(dto, companyAccessService.currentUserId(request));
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Empresa criada com sucesso!", CompanyMapper.toResponseDTO(company)));
@@ -57,11 +61,8 @@ public class CompanyController {
     // GET LOCALHOST:8080/api/companies/{id}
     @Operation(summary = "Buscar empresa por ID")
     @GetMapping("/{id:\\d+}")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id) {
-        Company company = companyService.findById(id)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Empresa nao encontrada")
-                );
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findById(@PathVariable Long id, HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(id, request);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>("Empresa encontrada com sucesso!", CompanyMapper.toResponseDTO(company)));
@@ -72,8 +73,8 @@ public class CompanyController {
     // GET LOCALHOST:8080/api/companies?cnpj=99999999999999
     @GetMapping(params = "cnpj")
     @Operation(summary = "Buscar empresa por CNPJ")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@RequestParam("cnpj") String cnpj) {
-        Company company = companyService.findByCnpj(cnpj);
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> findByCnpj(@RequestParam("cnpj") String cnpj, HttpServletRequest request) {
+        Company company = companyService.findByCnpjAndUser(cnpj, companyAccessService.currentUserId(request));
 
         // Como o "findByCnpj" nao esta usando optional no repository, nao fazemos tratamento de retorno Optional com orElseThrow
         // Por isso o tratamento precisa ser manual
@@ -89,8 +90,8 @@ public class CompanyController {
     // GET LOCALHOST:8080/api/companies
     @GetMapping(params = "!cnpj")
     @Operation(summary = "Listar empresas")
-    public ResponseEntity<ApiResponse<List<CompanyResponseDTO>>> findAll() {
-        List<CompanyResponseDTO> companies = companyService.findAll().stream()
+    public ResponseEntity<ApiResponse<List<CompanyResponseDTO>>> findAll(HttpServletRequest request) {
+        List<CompanyResponseDTO> companies = companyService.findAllByUser(companyAccessService.currentUserId(request)).stream()
                 .map(CompanyMapper::toResponseDTO)
                 .toList();
 
@@ -105,11 +106,8 @@ public class CompanyController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar empresa")
-    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequestDTO dto) {
-        Company company = companyService.findById(id)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Empresa nao encontrada")
-                );
+    public ResponseEntity<ApiResponse<CompanyResponseDTO>> updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequestDTO dto, HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(id, request);
 
         Company updated = companyService.updateCompany(company, dto);
 
@@ -122,8 +120,9 @@ public class CompanyController {
     // DELETE localhost:8080/api/companies/{id}
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir empresa")
-    public ResponseEntity<String> deleteCompany(@PathVariable Long id) {
+    public ResponseEntity<String> deleteCompany(@PathVariable Long id, HttpServletRequest request) {
         // O service verifica o ID e o handler converte recurso inexistente em 404.
+        companyAccessService.requireCompany(id, request);
         companyService.deleteCompany(id);
         return ResponseEntity.status(HttpStatus.OK).body("Empresa deletada com sucesso!");
     }

@@ -1,10 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, untracked, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BankAccount } from '../../bank-accounts/bank-account.model';
 import { BankAccountService } from '../../bank-accounts/bank-account.service';
-import { Company } from '../../companies/company.model';
-import { CompanyService } from '../../companies/company.service';
+import { forkJoin, Subscription } from 'rxjs';
 import { CurrentCompanyService } from '../../../services/current-company.service';
 import {
   PAYMENT_METHODS,
@@ -27,7 +26,6 @@ export class TransactionForm implements OnInit {
   private fb = inject(FormBuilder);
   private transactionService = inject(TransactionService);
   private categoryService = inject(TransactionCategoryService);
-  private companyService = inject(CompanyService);
   private bankAccountService = inject(BankAccountService);
   private currentCompanyService = inject(CurrentCompanyService);
   private router = inject(Router);
@@ -37,7 +35,9 @@ export class TransactionForm implements OnInit {
   paymentMethods = PAYMENT_METHODS;
   recurrenceFrequencies = RECURRENCE_FREQUENCIES;
 
-  companies = signal<Company[]>([]);
+  companyId = this.currentCompanyService.currentCompanyId;
+  private loadedCompanyId: number | null = null;
+  private optionsSubscription?: Subscription;
   bankAccounts = signal<BankAccount[]>([]);
   categories = signal<TransactionCategory[]>([]);
   transactionId = signal<number | null>(null);
@@ -50,7 +50,6 @@ export class TransactionForm implements OnInit {
   categoryError = signal<string | null>(null);
 
   form = this.fb.group({
-    companyId: [null as number | null, [Validators.required]],
     type: ['ENTRADA' as TransactionType, [Validators.required]],
     description: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
     value: [null as number | null, [Validators.required, Validators.min(0.01)]],
@@ -76,112 +75,98 @@ export class TransactionForm implements OnInit {
     return this.transactionId() !== null;
   }
 
-  ngOnInit(): void {
-    this.loadCompanies();
-
-    this.form.controls.companyId.valueChanges.subscribe((companyId) => {
-      this.loadOptions(companyId);
+  constructor() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) this.transactionId.set(Number(id));
+    effect((onCleanup) => {
+      const companyId = this.companyId();
+      untracked(() => {
+        this.optionsSubscription?.unsubscribe();
+        this.loadedCompanyId = null;
+        this.bankAccounts.set([]);
+        this.categories.set([]);
+        this.categoryModalOpen.set(false);
+        this.loadingOptions.set(false);
+        this.form.disable({ emitEvent: false });
+        if (!companyId) {
+          this.error.set('Selecione uma empresa na sidebar ou cadastre uma empresa para continuar.');
+          return;
+        }
+        this.error.set(null);
+        const transactionId = this.transactionId();
+        if (transactionId === null) {
+          this.loadOptions(companyId);
+        } else if (!Number.isSafeInteger(transactionId) || transactionId <= 0) {
+          this.error.set('Movimentacao invalida.');
+        } else {
+          this.loadingOptions.set(true);
+          const subscription = this.transactionService.findById(transactionId).subscribe({
+            next: transaction => {
+              if (this.companyId() !== companyId) return;
+              if (transaction.companyId !== companyId) {
+                this.loadingOptions.set(false);
+                this.error.set('Esta movimentacao nao pertence a empresa atual. Selecione a empresa correta na sidebar.');
+                return;
+              }
+              this.loadedCompanyId = companyId;
+              this.form.patchValue(transaction, { emitEvent: false });
+              this.form.controls.recurring.setValue(!!transaction.recurrenceFrequency, { emitEvent: false });
+              this.selectedType.set(transaction.type);
+              this.loadOptions(companyId, transaction.bankAccountId, transaction.transactionCategoryId);
+            },
+            error: () => {
+              this.loadingOptions.set(false);
+              this.error.set('Movimentacao nao encontrada.');
+            },
+          });
+          onCleanup(() => subscription.unsubscribe());
+        }
+        onCleanup(() => this.optionsSubscription?.unsubscribe());
+      });
     });
+  }
 
+  ngOnInit(): void {
     this.form.controls.type.valueChanges.subscribe((type) => {
       this.selectedType.set(type as TransactionType);
       this.selectFirstCategoryByType();
     });
-
-    const id = this.route.snapshot.paramMap.get('id');
-
-    if (id) {
-      this.transactionId.set(Number(id));
-      this.load(Number(id));
-    }
-  }
-
-  private loadCompanies(): void {
-    this.companyService.list().subscribe({
-      next: (companies) => {
-        const activeCompanies = companies.filter((company) => company.active);
-        this.companies.set(activeCompanies);
-
-        if (activeCompanies.length === 0) {
-          this.error.set('Cadastre uma empresa ativa antes de lançar movimentações.');
-          this.form.disable();
-          return;
-        }
-
-        this.currentCompanyService.ensureCompany(activeCompanies.map((company) => company.id));
-
-        if (!this.editing) {
-          this.form.controls.companyId.setValue(this.currentCompanyService.currentCompanyId() ?? activeCompanies[0].id);
-        }
-      },
-      error: () => {
-        this.error.set('Não foi possível carregar as empresas.');
-        this.form.disable();
-      },
-    });
-  }
-
-  private load(id: number): void {
-    this.transactionService.findById(id).subscribe({
-      next: (transaction) => {
-        this.form.patchValue(transaction, { emitEvent: false });
-        this.form.controls.recurring.setValue(!!transaction.recurrenceFrequency, { emitEvent: false });
-        this.selectedType.set(transaction.type);
-        this.loadOptions(transaction.companyId, transaction.bankAccountId, transaction.transactionCategoryId);
-      },
-      error: () => {
-        this.error.set('Movimentação não encontrada.');
-        this.form.disable();
-      },
-    });
   }
 
   private loadOptions(
-    companyId: number | null,
+    companyId: number,
     selectedBankAccountId: number | null = null,
     selectedCategoryId: number | null = null,
   ): void {
-    this.bankAccounts.set([]);
-    this.categories.set([]);
+    this.optionsSubscription?.unsubscribe();
     this.form.controls.bankAccountId.setValue(null, { emitEvent: false });
     this.form.controls.transactionCategoryId.setValue(null, { emitEvent: false });
-
-    if (!companyId) {
-      return;
-    }
-
     this.loadingOptions.set(true);
-
-    this.bankAccountService.listByCompany(companyId).subscribe({
-      next: (bankAccounts) => {
-        this.bankAccounts.set(bankAccounts);
-
-        const bankAccount = selectedBankAccountId
-          ? bankAccounts.find((account) => account.id === selectedBankAccountId)
-          : bankAccounts.find((account) => account.defaultAccount) ?? bankAccounts[0];
-
-        this.form.controls.bankAccountId.setValue(bankAccount?.id ?? null, { emitEvent: false });
-      },
-      error: () => {
-        this.bankAccounts.set([]);
-      },
-    });
-
-    this.categoryService.listCategoriesByCompany(companyId).subscribe({
-      next: (categories) => {
-        this.categories.set(categories);
-
-        if (selectedCategoryId && categories.some((category) => category.id === selectedCategoryId)) {
-          this.form.controls.transactionCategoryId.setValue(selectedCategoryId, { emitEvent: false });
+    this.form.disable({ emitEvent: false });
+    this.optionsSubscription = forkJoin({
+      bankAccounts: this.bankAccountService.listByCompany(companyId),
+      categories: this.categoryService.listCategoriesByCompany(companyId),
+    }).subscribe({
+      next: ({ bankAccounts, categories }) => {
+        if (this.companyId() !== companyId) return;
+        this.bankAccounts.set(bankAccounts.filter(account => account.companyId === companyId));
+        this.categories.set(categories.filter(category => category.companyId === companyId && category.active));
+        const account = selectedBankAccountId
+          ? this.bankAccounts().find(item => item.id === selectedBankAccountId)
+          : this.bankAccounts().find(item => item.defaultAccount) ?? this.bankAccounts()[0];
+        this.form.controls.bankAccountId.setValue(account?.id ?? null, { emitEvent: false });
+        if (selectedCategoryId) {
+          const category = this.filteredCategories().find(item => item.id === selectedCategoryId);
+          this.form.controls.transactionCategoryId.setValue(category?.id ?? null, { emitEvent: false });
         } else {
           this.selectFirstCategoryByType();
         }
-
         this.loadingOptions.set(false);
+        this.form.enable({ emitEvent: false });
       },
       error: () => {
-        this.categories.set([]);
         this.loadingOptions.set(false);
+        this.error.set('Nao foi possivel carregar contas e categorias da empresa atual. Reabra o formulario para tentar novamente.');
       },
     });
   }
@@ -194,6 +179,7 @@ export class TransactionForm implements OnInit {
   openCategoryModal(): void {
     this.categoryError.set(null);
     this.categoryForm.reset();
+    if (!this.companyId() || this.form.disabled) return;
     this.categoryModalOpen.set(true);
   }
 
@@ -210,7 +196,7 @@ export class TransactionForm implements OnInit {
   saveCategory(): void {
     this.categoryError.set(null);
 
-    if (!this.form.controls.companyId.value) {
+    if (!this.companyId() || this.form.disabled || this.loadingOptions() || this.savingCategory()) {
       this.categoryError.set('Selecione uma empresa antes de criar a categoria.');
       return;
     }
@@ -220,7 +206,7 @@ export class TransactionForm implements OnInit {
       return;
     }
 
-    const companyId = Number(this.form.controls.companyId.value);
+    const companyId = this.companyId()!;
     const name = this.categoryForm.controls.name.value?.trim() ?? '';
     const type = this.selectedType();
 
@@ -228,6 +214,8 @@ export class TransactionForm implements OnInit {
 
     this.categoryService.createCategory(companyId, { name, type }).subscribe({
       next: (category) => {
+        this.savingCategory.set(false);
+        if (this.companyId() !== companyId) return;
         const categories = [
           ...this.categories().filter((item) => item.id !== category.id),
           category,
@@ -271,12 +259,30 @@ export class TransactionForm implements OnInit {
   save(): void {
     this.error.set(null);
 
+    const companyId = this.companyId();
+    if (!companyId) {
+      this.error.set('Selecione uma empresa na sidebar antes de salvar.');
+      return;
+    }
+    if (this.saving() || this.loadingOptions() || this.form.disabled || (this.editing && this.loadedCompanyId !== companyId)) {
+      this.error.set('Aguarde o carregamento dos dados da empresa atual.');
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
     const data = this.form.getRawValue();
+    if (!this.bankAccounts().some(account => account.id === data.bankAccountId && account.companyId === companyId)
+      || !this.filteredCategories().some(category => category.id === data.transactionCategoryId && category.companyId === companyId)) {
+      this.error.set('Selecione uma conta e uma categoria validas da empresa atual.');
+      return;
+    }
+    if (data.recurring && !data.recurrenceFrequency) {
+      this.error.set('Informe a frequencia da recorrencia.');
+      return;
+    }
     const id = this.transactionId();
     const transactionDate = data.date ?? this.todayIso();
     const recurrenceEndDate = data.recurring && data.recurrenceEndDate
@@ -289,7 +295,7 @@ export class TransactionForm implements OnInit {
     }
 
     const request: TransactionRequest = {
-      companyId: Number(data.companyId),
+      companyId,
       bankAccountId: Number(data.bankAccountId),
       transactionCategoryId: Number(data.transactionCategoryId),
       type: data.type as TransactionType,
@@ -318,7 +324,6 @@ export class TransactionForm implements OnInit {
 
   reset(): void {
     this.form.reset({
-      companyId: this.companies()[0]?.id ?? null,
       type: 'ENTRADA',
       method: 'PIX',
       date: this.todayIso(),
@@ -327,6 +332,8 @@ export class TransactionForm implements OnInit {
       recurrenceEndDate: null,
     });
     this.selectedType.set('ENTRADA');
+    const companyId = this.companyId();
+    if (companyId && !this.form.disabled) this.loadOptions(companyId);
     this.error.set(null);
   }
 }

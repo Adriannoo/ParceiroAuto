@@ -4,6 +4,7 @@ import { of } from 'rxjs';
 import { appConfig } from '../../../app.config';
 import { CompanyService } from '../../companies/company.service';
 import { BankAccountService } from '../bank-account.service';
+import { CurrentCompanyService } from '../../../services/current-company.service';
 import { BankAccountList } from './bank-account-list';
 
 describe('BankAccountList', () => {
@@ -24,6 +25,7 @@ describe('BankAccountList', () => {
       ],
     }).compileComponents();
 
+    TestBed.inject(CurrentCompanyService).setCurrentCompanyId(1);
     const fixture = TestBed.createComponent(BankAccountList);
     fixture.detectChanges();
     await fixture.whenStable();

@@ -16,9 +16,11 @@ O Flyway aplica as migrations na inicializacao. Por padrao:
 - [Swagger UI](http://localhost:8080/swagger-ui/index.html): documentacao interativa.
 - [OpenAPI JSON](http://localhost:8080/v3/api-docs): contrato gerado a partir do codigo.
 
-Em banco vazio, V1 cria as tabelas e V2 carrega uma empresa de demonstracao,
-uma conta com saldo zero e dez categorias. Cadastre seu usuario pela API; nao ha
-senha padrao. O historico antigo precisa ser descartado recriando o banco de desenvolvimento.
+Em banco vazio, V1 cria as tabelas e V2 cria o login e o ambiente demonstrativo
+do Gustavo com empresa, contas bancarias, categorias, movimentacoes e uma
+recorrencia. Login: `gustavo@empresa.com`, senha
+`123456`. Novos cadastros nao recebem esses dados. O historico antigo precisa ser
+descartado recriando o banco de desenvolvimento.
 
 No Swagger, escolha uma rota, clique em **Try it out**, preencha os parametros e use **Execute**. Confira o status e o corpo em **Response body**. Os cadastros, alteracoes e exclusoes executados ali afetam o banco configurado.
 

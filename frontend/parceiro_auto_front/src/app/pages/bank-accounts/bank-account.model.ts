@@ -12,7 +12,6 @@ export interface BankAccount {
 export type BankAccountType = 'CHECKING' | 'SAVINGS' | 'CASH' | 'INVESTMENT';
 
 export interface BankAccountRequest {
-  companyId: number;
   bankName: string;
   branch: string;
   accountNumber: string;

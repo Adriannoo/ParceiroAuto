@@ -13,7 +13,7 @@
       <div class="row">
         <div class="col-md-7 mb-3">
           <label class="form-label" for="legalName">Razão social</label>
-          <input id="legalName" type="text" class="form-control"
+          <input id="legalName" type="text" maxlength="50" class="form-control"
             [class.is-invalid]="isInvalid('legalName')" formControlName="legalName" />
           @if (isInvalid('legalName')) {
             <div class="invalid-feedback d-block">
@@ -28,10 +28,10 @@
 
         <div class="col-md-5 mb-3">
           <label class="form-label" for="tradeName">Nome fantasia</label>
-          <input id="tradeName" type="text" class="form-control"
+          <input id="tradeName" type="text" maxlength="50" class="form-control"
             [class.is-invalid]="isInvalid('tradeName')" formControlName="tradeName" />
           @if (isInvalid('tradeName')) {
-            <div class="invalid-feedback d-block">Informe o nome fantasia.</div>
+            <div class="invalid-feedback d-block">Informe o nome fantasia com at? 50 caracteres.</div>
           }
         </div>
 
@@ -58,7 +58,7 @@
 
         <div class="col-md-4 mb-3">
           <label class="form-label" for="stateRegistration">Inscrição estadual</label>
-          <input id="stateRegistration" type="text" class="form-control"
+          <input id="stateRegistration" type="text" maxlength="30" class="form-control"
             placeholder="Deixe ISENTO se não houver" formControlName="stateRegistration" />
         </div>
 

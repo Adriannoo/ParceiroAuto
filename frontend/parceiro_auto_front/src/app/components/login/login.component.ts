@@ -24,7 +24,7 @@ export class LoginComponent {
     this.loading.set(true);
 
     const emailValue = this.email().trim();
-    const passwordValue = this.password().trim();
+    const passwordValue = this.password();
 
     if (!emailValue || !passwordValue) {
       this.error.set('Email e senha são obrigatórios');

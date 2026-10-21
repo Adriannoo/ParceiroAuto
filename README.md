@@ -32,7 +32,7 @@ Com `JAVA_HOME` configurado, também é possível iniciar pelo terminal, na past
 
 As migrations ficam em `src/main/resources/db/migration` e são executadas pelo Flyway na inicialização. A API usa `http://localhost:8080` por padrão.
 
-São apenas duas migrations SQL: `V1__create_tables.sql` cria a estrutura completa e `V2__insert_initial_data.sql` insere uma empresa de demonstração, uma conta com saldo zero e dez categorias. Não há usuário ou senha fixa; cadastre o usuário pela API, que já salva a senha com hash PBKDF2.
+Sao duas migrations SQL: V1 cria a estrutura, e V2 cria o login do Gustavo e todo o ambiente demonstrativo. Login de exemplo: `gustavo@empresa.com`, senha `123456`. Novas contas nao recebem empresa nem dados de demonstracao; depois do cadastro, a primeira tela pede o cadastro de uma empresa.
 
 Esse histórico foi reiniciado para uso em banco vazio. Quem já executou as migrations antigas precisa recriar o banco de desenvolvimento antes de iniciar. Novas empresas continuam recebendo categorias padrão pelo service.
 
@@ -43,9 +43,9 @@ npm install
 npm start
 ```
 
-Acesse `http://localhost:4200`.
+Acesse `http://localhost:4200`. Depois de criar a conta, o sistema abre o cadastro da primeira empresa.
 
-O frontend usa a API nas telas de negócio. O login ainda é simulado no navegador, com acesso de demonstração `gustavo@empresa.com` e senha `123456`; ele não utiliza o cadastro de usuários do backend.
+A V2 cria o usuario gustavo@empresa.com com senha 123456 e popula o ambiente demonstrativo dele; os novos cadastros comecam sem empresa.
 
 Veja o [guia do frontend](docs/frontend.md) para organização, services, modais, testes e pendências da entrega. Os services de lançamentos, categorias e recorrências estão separados. O SweetAlert2 informa o resultado da exclusão de empresas, preservando o modal de confirmação.
 
@@ -127,3 +127,7 @@ Na pasta do back, execute `./mvnw.cmd test`. Os testes cobrem validações e doc
 `PostgresPersistenceTest` verifica migrations, consultas e rollback em PostgreSQL. Essa classe só executa quando `test.postgres.url` é informado para um banco de testes separado; sem essa configuração, ela é ignorada.
 
 Mais detalhes no [guia de Swagger e validação](docs/swagger-validacao.md).
+
+As rotas de negocio da API exigem sessao autenticada. Empresas e dados financeiros sao limitados aos usuarios associados a cada empresa; ao cadastrar uma empresa, o usuario da sessao recebe o papel de proprietario. Para testar pelo Swagger, cadastre-se ou execute /api/users/login primeiro.
+
+As consultas de categorias aceitam includeInactive=true para preservar os nomes no historico. Por padrao, apenas categorias ativas sao retornadas para novos lancamentos.

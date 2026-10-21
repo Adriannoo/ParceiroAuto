@@ -8,6 +8,13 @@
   <a routerLink="/transactions/new" class="btn btn-primary text-nowrap">Nova movimentação</a>
 </div>
 
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
+@if (!companyId()) {
+  <div class="alert alert-info">Selecione uma empresa na sidebar ou <a routerLink="/companies">cadastre uma empresa</a>.</div>
+}
+
 <div class="filters">
   <input
     type="search"
@@ -16,15 +23,6 @@
     [ngModel]="searchTerm()"
     (ngModelChange)="searchTerm.set($event)" />
 
-  <select
-    class="form-select filter-select"
-    [ngModel]="companyId()"
-    (ngModelChange)="onCompanyFilterChange($event)">
-    <option value="all">Todas as empresas</option>
-    @for (company of companies(); track company.id) {
-      <option [ngValue]="company.id">{{ company.tradeName }}</option>
-    }
-  </select>
 
   <div class="btn-group" role="group" aria-label="Filtrar por tipo">
     <button type="button" class="btn btn-outline-secondary"
@@ -49,8 +47,8 @@
       </div>
     </div>
 
-    @if (companyId() === 'all') {
-      <div class="empty-recurring">Selecione uma empresa no filtro para gerenciar as recorrências dela.</div>
+    @if (!companyId()) {
+      <div class="empty-recurring">Selecione uma empresa na sidebar para gerenciar as recorrências dela.</div>
     } @else if (loadingRecurring()) {
       <div class="text-muted py-2">Carregando recorrências...</div>
     } @else if (recurringTransactions().length === 0) {

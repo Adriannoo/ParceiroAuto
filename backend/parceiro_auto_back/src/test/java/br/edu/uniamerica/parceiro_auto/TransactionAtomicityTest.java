@@ -37,17 +37,22 @@ class TransactionAtomicityTest {
     @Autowired RecurrenceRuleRepository rules;
     @Autowired TransactionCategoryService categoryService;
     @Autowired CompanyService companyService;
+    @Autowired UserRepository users;
+    @Autowired UserCompanyRepository userCompanies;
     @MockitoSpyBean RecurrenceRuleService recurrenceService;
     @MockitoSpyBean TransactionService transactionService;
     private Long companyId;
     private Long accountId;
     private Long categoryId;
+    private Long testUserId;
 
     @Test
     void readingInactiveCategoriesDoesNotRecreateThem() {
         var company = companies.findById(companyId).orElseThrow();
         categoryService.deactivateCategory(company, categoryId);
         long count = categories.count();
+        assertThat(categoryService.findAllByCompany(company))
+                .extracting(category -> category.getId()).contains(categoryId);
         assertThat(categoryService.findActiveByCompany(company)).isEmpty();
         assertThat(categoryService.findActiveByCompany(company)).isEmpty();
         assertThat(categories.count()).isEqualTo(count);
@@ -60,12 +65,18 @@ class TransactionAtomicityTest {
                 "11222333000181", "Teste", "Teste", null, LegalNature.LTDA,
                 TaxRegime.SIMPLES_NACIONAL, CompanySize.ME, "85800-000", "Rua", "1",
                 null, "Centro", "Cascavel", "PR", "45999999999", "teste@example.com", true);
-        var company = companyService.createCompany(dto);
+        var company = companyService.createCompany(dto, testUserId);
         assertThat(categoryService.findActiveByCompany(company)).hasSize(10);
+        assertThat(userCompanies.existsByCompany_IdAndUser_Id(company.getId(), testUserId)).isTrue();
     }
 
     @BeforeEach
     void prepareData() {
+        User testUser = new User();
+        testUser.setLogin("own" + UUID.randomUUID().toString().substring(0, 8) + "@example.com");
+        testUser.setPassword("test-hash");
+        testUserId = users.save(testUser).getId();
+
         Company company = new Company();
         company.setCnpj(UUID.randomUUID().toString().replace("-", "").substring(0, 14));
         company.setLegalName("Teste");

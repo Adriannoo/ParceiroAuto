@@ -1,7 +1,7 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, untracked, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { BankAccount } from '../../bank-accounts/bank-account.model';
 import { BankAccountService } from '../../bank-accounts/bank-account.service';
 import { Company } from '../../companies/company.model';
@@ -48,7 +48,10 @@ export class TransactionList implements OnInit {
 
   searchTerm = signal('');
   type = signal<TypeFilter>('all');
-  companyId = signal<number | 'all'>('all');
+  companyId = this.currentCompanyService.currentCompanyId;
+  private dataSubscription?: Subscription;
+  private recurringSubscription?: Subscription;
+  error = signal<string | null>(null);
 
   transactionToDelete = signal<Transaction | null>(null);
   recurrenceToEdit = signal<RecurringTransaction | null>(null);
@@ -66,7 +69,7 @@ export class TransactionList implements OnInit {
 
     return this.transactions()
       .filter((transaction) => typeFilter === 'all' || transaction.type === typeFilter)
-      .filter((transaction) => companyFilter === 'all' || transaction.companyId === companyFilter)
+      .filter((transaction) => transaction.companyId === companyFilter)
       .filter(
         (transaction) =>
           !term ||
@@ -80,72 +83,74 @@ export class TransactionList implements OnInit {
 
   recentTransactions = computed(() => this.filtered().slice(0, 10));
 
+  constructor() {
+    effect(onCleanup => {
+      this.companyId();
+      untracked(() => {
+        this.transactionToDelete.set(null);
+        this.recurrenceToEdit.set(null);
+        this.recurrenceToDelete.set(null);
+        this.error.set(null);
+        this.load();
+      });
+      onCleanup(() => {
+        this.dataSubscription?.unsubscribe();
+        this.recurringSubscription?.unsubscribe();
+      });
+    });
+  }
+
   ngOnInit(): void {
-    const currentCompanyId = this.currentCompanyService.currentCompanyId();
-
-    if (currentCompanyId) {
-      this.companyId.set(currentCompanyId);
-    }
-
-    this.load();
+    this.companyService.list().subscribe({ next: companies => this.companies.set(companies) });
   }
 
   load(): void {
+    this.dataSubscription?.unsubscribe();
+    const companyId = this.companyId();
+    this.transactions.set([]);
+    this.bankAccounts.set([]);
+    this.categories.set([]);
+    this.loading.set(false);
+    this.loadRecurring();
+    if (!companyId) return;
     this.loading.set(true);
-
-    forkJoin({
-      transactions: this.transactionService.list(),
-      companies: this.companyService.list(),
-    }).pipe(
-      switchMap(({ transactions, companies }) => {
+    this.dataSubscription = forkJoin({
+      transactions: this.transactionService.listByCompany(companyId),
+      bankAccounts: this.bankAccountService.listByCompany(companyId),
+      categories: this.categoryService.listCategoriesByCompany(companyId, true),
+    }).subscribe({
+      next: ({ transactions, bankAccounts, categories }) => {
+        if (this.companyId() !== companyId) return;
         this.transactions.set(transactions);
-        this.companies.set(companies);
-
-        if (companies.length === 0) {
-          return of({ bankAccounts: [], categories: [] });
-        }
-
-        return forkJoin({
-          bankAccounts: forkJoin(companies.map((company) => this.bankAccountService.listByCompany(company.id))),
-          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id))),
-        });
-      }),
-    ).subscribe({
-      next: ({ bankAccounts, categories }) => {
-        this.bankAccounts.set(bankAccounts.flat());
-        this.categories.set(categories.flat());
+        this.bankAccounts.set(bankAccounts);
+        this.categories.set(categories);
         this.loading.set(false);
-        this.loadRecurring();
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.error.set('Nao foi possivel carregar as movimentacoes da empresa atual.');
+      },
     });
   }
 
   loadRecurring(): void {
+    this.recurringSubscription?.unsubscribe();
     const companyId = this.companyId();
-
-    if (companyId === 'all') {
-      this.recurringTransactions.set([]);
-      return;
-    }
-
+    this.recurringTransactions.set([]);
+    this.loadingRecurring.set(false);
+    if (!companyId) return;
     this.loadingRecurring.set(true);
-
-    this.recurrenceService.listRecurringByCompany(companyId).subscribe({
-      next: (items) => {
+    this.recurringSubscription = this.recurrenceService.listRecurringByCompany(companyId).subscribe({
+      next: items => {
+        if (this.companyId() !== companyId) return;
         this.recurringTransactions.set(items);
         this.loadingRecurring.set(false);
       },
       error: () => {
-        this.recurringTransactions.set([]);
         this.loadingRecurring.set(false);
+        this.error.set('Nao foi possivel carregar as recorrencias.');
       },
     });
-  }
-
-  onCompanyFilterChange(companyId: number | 'all'): void {
-    this.companyId.set(companyId);
-    this.loadRecurring();
   }
 
   companyName(id: number): string {
@@ -193,12 +198,10 @@ export class TransactionList implements OnInit {
   clearFilters(): void {
     this.searchTerm.set('');
     this.type.set('all');
-    this.companyId.set('all');
-    this.recurringTransactions.set([]);
   }
 
   hasFilters(): boolean {
-    return this.searchTerm() !== '' || this.type() !== 'all' || this.companyId() !== 'all';
+    return this.searchTerm() !== '' || this.type() !== 'all';
   }
 
   openConfirmation(transaction: Transaction): void {
@@ -212,13 +215,16 @@ export class TransactionList implements OnInit {
   confirmDeletion(): void {
     const transaction = this.transactionToDelete();
 
-    if (!transaction) {
+    if (!transaction || transaction.companyId !== this.companyId()) {
       return;
     }
 
-    this.transactionService.delete(transaction.id).subscribe(() => {
-      this.closeConfirmation();
-      this.load();
+    this.transactionService.delete(transaction.id).subscribe({
+      next: () => {
+        this.closeConfirmation();
+        this.load();
+      },
+      error: () => this.error.set('Nao foi possivel excluir a movimentacao. Tente novamente.'),
     });
   }
 
@@ -245,7 +251,7 @@ export class TransactionList implements OnInit {
   saveRecurrence(): void {
     const recurrence = this.recurrenceToEdit();
 
-    if (!recurrence) {
+    if (!recurrence || this.savingRecurrence() || recurrence.companyId !== this.companyId()) {
       return;
     }
 
@@ -264,9 +270,12 @@ export class TransactionList implements OnInit {
       next: () => {
         this.savingRecurrence.set(false);
         this.closeRecurrenceEdit();
-        this.loadRecurring();
+        this.load();
       },
-      error: () => this.savingRecurrence.set(false),
+      error: () => {
+        this.savingRecurrence.set(false);
+        this.error.set('Nao foi possivel atualizar a recorrencia. Confira a data final.');
+      },
     });
   }
 
@@ -285,7 +294,7 @@ export class TransactionList implements OnInit {
   confirmRecurrenceDelete(): void {
     const recurrence = this.recurrenceToDelete();
 
-    if (!recurrence) {
+    if (!recurrence || this.savingRecurrence() || recurrence.companyId !== this.companyId()) {
       return;
     }
 
@@ -295,10 +304,12 @@ export class TransactionList implements OnInit {
       next: () => {
         this.recurrenceToDelete.set(null);
         this.savingRecurrence.set(false);
-        this.loadRecurring();
         this.load();
       },
-      error: () => this.savingRecurrence.set(false),
+      error: () => {
+        this.savingRecurrence.set(false);
+        this.error.set('Nao foi possivel encerrar a recorrencia.');
+      },
     });
   }
 }

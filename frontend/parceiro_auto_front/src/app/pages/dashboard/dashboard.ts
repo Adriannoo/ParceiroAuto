@@ -1,7 +1,6 @@
-import { Component, OnInit, effect, inject, signal, computed } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, effect, untracked, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { CompanyService } from '../companies/company.service';
 import { Company } from '../companies/company.model';
 import { TransactionService } from '../transactions/transaction.service';
@@ -26,7 +25,7 @@ interface CategorySlice {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, RouterLink],
+  imports: [RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -42,6 +41,7 @@ export class Dashboard implements OnInit {
   categories = signal<TransactionCategory[]>([]);
   recurring = signal<RecurringTransaction[]>([]);
   loading = signal(false);
+  error = signal<string | null>(null);
 
   companyId = this.currentCompanyService.currentCompanyId;
 
@@ -55,15 +55,41 @@ export class Dashboard implements OnInit {
   private currentMonth = new Date().toISOString().slice(0, 7);
 
   constructor() {
-    effect(() => {
-      this.companyId();
-      this.loadRecurring();
+    effect(onCleanup => {
+      const companyId = this.companyId();
+      untracked(() => {
+        this.error.set(null);
+        this.all.set([]);
+        this.categories.set([]);
+        this.recurring.set([]);
+        this.loading.set(false);
+        if (!companyId) return;
+        this.loading.set(true);
+        const subscription = forkJoin({
+          transactions: this.transactionService.listByCompany(companyId),
+          categories: this.categoryService.listCategoriesByCompany(companyId, true),
+          recurring: this.recurrenceService.listNextRecurringByCompany(companyId, 3),
+        }).subscribe({
+          next: ({ transactions, categories, recurring }) => {
+            if (this.companyId() !== companyId) return;
+            this.all.set(transactions);
+            this.categories.set(categories);
+            this.recurring.set(recurring);
+            this.loading.set(false);
+          },
+          error: () => {
+            this.loading.set(false);
+            this.error.set('Nao foi possivel carregar os indicadores da empresa atual.');
+          },
+        });
+        onCleanup(() => subscription.unsubscribe());
+      });
     });
   }
 
   transactions = computed(() => {
     const filter = this.companyId();
-    return filter === null ? this.all() : this.all().filter((m) => m.companyId === filter);
+    return filter === null ? [] : this.all().filter((m) => m.companyId === filter);
   });
 
   monthlyTransactions = computed(() =>
@@ -141,35 +167,8 @@ export class Dashboard implements OnInit {
   );
 
   ngOnInit(): void {
-    this.loading.set(true);
-
-    forkJoin({
-      companies: this.companyService.list(),
-      transactions: this.transactionService.list(),
-    }).pipe(
-      switchMap(({ companies, transactions }) => {
-        this.companies.set(companies);
-        this.currentCompanyService.ensureCompany(companies.filter((company) => company.active).map((company) => company.id));
-        this.all.set(transactions);
-
-        if (companies.length === 0) {
-          return of({ categories: [], recurring: [] });
-        }
-
-        const currentCompanyId = this.companyId() ?? companies[0].id;
-
-        return forkJoin({
-          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id))),
-          recurring: this.recurrenceService.listNextRecurringByCompany(currentCompanyId, 3),
-        });
-      }),
-    ).subscribe({
-      next: ({ categories, recurring }) => {
-        this.categories.set(categories.flat());
-        this.recurring.set(recurring);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
+    this.companyService.list().subscribe({
+      next: companies => this.companies.set(companies),
     });
   }
 
@@ -179,25 +178,6 @@ export class Dashboard implements OnInit {
 
   companyName(id: number): string {
     return this.companies().find((e) => e.id === id)?.tradeName ?? 'Empresa removida';
-  }
-
-  setCurrentCompany(companyId: number | string): void {
-    this.currentCompanyService.setCurrentCompanyId(Number(companyId));
-    this.loadRecurring();
-  }
-
-  private loadRecurring(): void {
-    const companyId = this.companyId();
-
-    if (!companyId) {
-      this.recurring.set([]);
-      return;
-    }
-
-    this.recurrenceService.listNextRecurringByCompany(companyId, 3).subscribe({
-      next: (recurring) => this.recurring.set(recurring),
-      error: () => this.recurring.set([]),
-    });
   }
 
   categoryName(transaction: Transaction): string {

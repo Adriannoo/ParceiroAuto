@@ -61,6 +61,12 @@ public class UserService {
         return saved;
     }
 
+    public User createUser(String login, String password, String name) {
+        User user = createUser(login, password);
+        user.setName(name == null || name.isBlank() ? login.trim() : name.trim());
+        return userRepository.save(user);
+    }
+
     // Autentica um usuário com base no login e senha fornecidos.
     @Transactional(readOnly = true)
     public User authenticate(String login, String password) {

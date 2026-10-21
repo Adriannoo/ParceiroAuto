@@ -31,9 +31,9 @@ export class RegisterComponent {
   constructor() {
     this.form = this.fb.group(
       {
-        name: ['', [Validators.required, Validators.minLength(3)]],
-        email: ['', [Validators.required, Validators.email]],
-        password: ['', [Validators.required, Validators.minLength(6)]],
+        name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+        email: ['', [Validators.required, Validators.email, Validators.maxLength(50)]],
+        password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
         confirmPassword: ['', [Validators.required]]
       },
       {
@@ -86,13 +86,10 @@ export class RegisterComponent {
       name,
       email,
       password: password,
-      role: 'user',
-      active: true,
     }).subscribe({
       next: () => {
         this.loading.set(false);
-        // Redirect to the dashboard after signing in
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/companies/new']);
       },
       error: (err) => {
         this.loading.set(false);

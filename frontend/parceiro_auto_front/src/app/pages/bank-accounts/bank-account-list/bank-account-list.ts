@@ -1,7 +1,9 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, untracked, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { CurrentCompanyService } from '../../../services/current-company.service';
 import { Company } from '../../companies/company.model';
 import { CompanyService } from '../../companies/company.service';
 import { BankAccount, BANK_ACCOUNT_TYPES, BankAccountType } from '../bank-account.model';
@@ -21,9 +23,12 @@ export class BankAccountList implements OnInit {
   private companyService = inject(CompanyService);
 
   companies = signal<Company[]>([]);
-  selectedCompanyId = signal<number | null>(null);
+  private currentCompanyService = inject(CurrentCompanyService);
+  selectedCompanyId = this.currentCompanyService.currentCompanyId;
+  private accountsSubscription?: Subscription;
   bankAccounts = signal<BankAccount[]>([]);
   loading = signal(false);
+  error = signal<string | null>(null);
   loadingCompanies = signal(false);
 
   searchTerm = signal('');
@@ -49,6 +54,18 @@ export class BankAccountList implements OnInit {
 
   totalDefault = computed(() => this.bankAccounts().filter((account) => account.defaultAccount).length);
 
+  constructor() {
+    effect(onCleanup => {
+      this.selectedCompanyId();
+      untracked(() => {
+        this.closeConfirmation();
+        this.settingDefaultId.set(null);
+        this.loadBankAccounts();
+      });
+      onCleanup(() => this.accountsSubscription?.unsubscribe());
+    });
+  }
+
   ngOnInit(): void {
     this.loadCompanies();
   }
@@ -61,12 +78,6 @@ export class BankAccountList implements OnInit {
         this.companies.set(companies);
         this.loadingCompanies.set(false);
 
-        const firstCompanyId = companies[0]?.id ?? null;
-        this.selectedCompanyId.set(firstCompanyId);
-
-        if (firstCompanyId) {
-          this.loadBankAccounts();
-        }
       },
       error: () => {
         this.loadingCompanies.set(false);
@@ -74,13 +85,11 @@ export class BankAccountList implements OnInit {
     });
   }
 
-  onCompanyChange(companyId: number | string): void {
-    const selectedId = Number(companyId);
-    this.selectedCompanyId.set(Number.isNaN(selectedId) ? null : selectedId);
-    this.loadBankAccounts();
-  }
-
   loadBankAccounts(): void {
+    this.error.set(null);
+    this.accountsSubscription?.unsubscribe();
+    this.bankAccounts.set([]);
+    this.loading.set(false);
     const companyId = this.selectedCompanyId();
 
     if (!companyId) {
@@ -90,14 +99,16 @@ export class BankAccountList implements OnInit {
 
     this.loading.set(true);
 
-    this.bankAccountService.listByCompany(companyId).subscribe({
+    this.accountsSubscription = this.bankAccountService.listByCompany(companyId).subscribe({
       next: (bankAccounts) => {
+        if (this.selectedCompanyId() !== companyId) return;
         this.bankAccounts.set(bankAccounts);
         this.loading.set(false);
       },
       error: () => {
         this.bankAccounts.set([]);
         this.loading.set(false);
+        this.error.set('Nao foi possivel carregar as contas da empresa atual.');
       },
     });
   }
@@ -132,7 +143,7 @@ export class BankAccountList implements OnInit {
   confirmDeletion(): void {
     const bankAccount = this.bankAccountToDelete();
 
-    if (!bankAccount) {
+    if (!bankAccount || bankAccount.companyId !== this.selectedCompanyId()) {
       return;
     }
 
@@ -141,11 +152,12 @@ export class BankAccountList implements OnInit {
         this.closeConfirmation();
         this.loadBankAccounts();
       },
+      error: () => this.error.set('Nao foi possivel excluir a conta bancaria. Verifique os vinculos da conta.'),
     });
   }
 
   setDefault(bankAccount: BankAccount): void {
-    if (bankAccount.defaultAccount) {
+    if (this.settingDefaultId() || bankAccount.defaultAccount || bankAccount.companyId !== this.selectedCompanyId()) {
       return;
     }
 
@@ -153,6 +165,7 @@ export class BankAccountList implements OnInit {
 
     this.bankAccountService.setDefault(bankAccount.id, bankAccount.companyId).subscribe({
       next: (updatedBankAccount) => {
+        if (this.selectedCompanyId() !== bankAccount.companyId) return;
         this.bankAccounts.update((accounts) =>
           accounts.map((account) => ({
             ...account,
@@ -163,6 +176,7 @@ export class BankAccountList implements OnInit {
       },
       error: () => {
         this.settingDefaultId.set(null);
+        if (this.selectedCompanyId() === bankAccount.companyId) this.error.set('Nao foi possivel definir a conta padrao.');
       },
     });
   }

@@ -32,8 +32,9 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final BrasilApiClient brasilApiClient;
     private final TransactionCategoryService transactionCategoryService;
+    private final CompanyAccessService companyAccessService;
 
-    public Company createCompany(CompanyRequestDTO dto) {
+    public Company createCompany(CompanyRequestDTO dto, Long ownerUserId) {
 
         log.info("Criando empresa com CNPJ {}", dto.cnpj());
         String normalizedCnpj = validateCnpj(dto.cnpj());
@@ -49,6 +50,7 @@ public class CompanyService {
         applyCompanyData(company, dto, normalizedCnpj);
 
         Company saved = companyRepository.save(company);
+        companyAccessService.linkOwner(saved, ownerUserId);
         transactionCategoryService.createDefaults(saved);
         log.info("Empresa com CNPJ {} cadastrada (id={})", normalizedCnpj, saved.getId());
         return saved;
@@ -69,6 +71,11 @@ public class CompanyService {
     }
 
     @Transactional(readOnly = true)
+    public List<Company> findAllByUser(Long userId) {
+        return companyRepository.findAllByUserCompanies_User_Id(userId);
+    }
+
+    @Transactional(readOnly = true)
     public Company findByCnpj(String cnpj) {
         if (cnpj == null || cnpj.isBlank()) {
             return null;
@@ -77,6 +84,12 @@ public class CompanyService {
         String normalizedCnpj = validateCnpj(cnpj);
 
         return companyRepository.findByCnpj(normalizedCnpj);
+    }
+
+    @Transactional(readOnly = true)
+    public Company findByCnpjAndUser(String cnpj, Long userId) {
+        if (cnpj == null || cnpj.isBlank()) return null;
+        return companyRepository.findByCnpjAndUserCompanies_User_Id(validateCnpj(cnpj), userId);
     }
 
     public Company updateCompany(Company company, CompanyRequestDTO dto) {

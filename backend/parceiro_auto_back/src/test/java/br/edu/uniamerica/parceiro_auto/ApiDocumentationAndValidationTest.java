@@ -6,6 +6,7 @@ import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionMethod;
 import br.edu.uniamerica.parceiro_auto.entity.enums.TransactionType;
 import br.edu.uniamerica.parceiro_auto.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,11 +46,43 @@ class ApiDocumentationAndValidationTest {
     @Autowired Validator validator;
     @MockitoBean UserService userService;
     @MockitoBean CompanyService companyService;
+    @MockitoBean CompanyAccessService companyAccessService;
     @MockitoBean BankAccountService bankAccountService;
     @MockitoBean TransactionService transactionService;
     @MockitoBean TransactionCategoryService transactionCategoryService;
     @MockitoBean RecurrenceRuleService recurrenceRuleService;
     @MockitoBean TransactionApplicationService transactionApplicationService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void authenticatedRequests(@Autowired org.springframework.web.context.WebApplicationContext context) {
+        var session = new org.springframework.mock.web.MockHttpSession();
+        session.setAttribute("userId", 1L);
+        mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup(context)
+                .defaultRequest(get("/").session(session)).build();
+        org.mockito.Mockito.when(companyAccessService.currentUserId(org.mockito.ArgumentMatchers.any())).thenReturn(1L);
+    }
+
+    @Test
+    void includesInactiveCategoriesOnlyForHistory() throws Exception {
+        var company = new Company();
+        company.setId(1L);
+        var category = new br.edu.uniamerica.parceiro_auto.entity.TransactionCategory();
+        category.setId(8L);
+        category.setCompany(company);
+        category.setName("Vendas antigas");
+        category.setType(TransactionType.ENTRADA);
+        category.setActive(false);
+        when(companyService.findById(1L)).thenReturn(Optional.of(company));
+        when(companyAccessService.requireCompany(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(HttpServletRequest.class))).thenReturn(company);
+        when(transactionCategoryService.findAllByCompany(company)).thenReturn(java.util.List.of(category));
+        when(transactionCategoryService.findActiveByCompany(company)).thenReturn(java.util.List.of());
+        mvc.perform(get("/api/transaction-categories/company/1?includeInactive=true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dados[0].name").value("Vendas antigas"))
+                .andExpect(jsonPath("$.dados[0].active").value(false));
+        mvc.perform(get("/api/transaction-categories/company/1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.dados").isEmpty());
+    }
 
     // Confere erros de leitura que acontecem antes da Bean Validation.
     @ParameterizedTest
@@ -94,6 +127,7 @@ class ApiDocumentationAndValidationTest {
         account.setId(2L);
         account.setCompany(company);
         when(companyService.findById(1L)).thenReturn(Optional.of(company));
+        when(companyAccessService.requireCompany(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(HttpServletRequest.class))).thenReturn(company);
         when(bankAccountService.createBankAccount(company, "Banco", "1234", "123456", "CORRENTE", false))
                 .thenReturn(account);
 

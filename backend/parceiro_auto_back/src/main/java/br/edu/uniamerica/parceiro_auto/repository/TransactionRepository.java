@@ -15,6 +15,7 @@ import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     List<Transaction> findAllByOrderByDateDescIdDesc();
+    List<Transaction> findAllByCompany_UserCompanies_User_IdOrderByDateDescIdDesc(Long userId);
 
     List<Transaction> findByBankAccountOrderByDateDescIdDesc(BankAccount bankAccount);
 
