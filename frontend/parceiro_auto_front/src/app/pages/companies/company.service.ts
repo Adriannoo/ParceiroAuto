@@ -1,12 +1,14 @@
 ﻿import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, Subject, map, tap } from 'rxjs';
 import { ApiResponse } from '../../models/api-response.model';
-import {Company, CompanyLookup} from './company.model';
+import {Company, CompanyLookup, CompanyRequest} from './company.model';
 
 @Injectable({ providedIn: 'root' })
 export class CompanyService {
   private http = inject(HttpClient);
+  private changes = new Subject<void>();
+  readonly companiesChanged = this.changes.asObservable();
   private readonly apiUrl = 'http://localhost:8080/api/companies';
 
   list(): Observable<Company[]> {
@@ -21,21 +23,24 @@ export class CompanyService {
     );
   }
 
-  create(company: Omit<Company, 'id' | 'userIds'>): Observable<Company> {
+  create(company: CompanyRequest): Observable<Company> {
     return this.http.post<ApiResponse<Company>>(this.apiUrl, company).pipe(
-      map(response => response.dados)
+      map(response => response.dados),
+      tap(() => this.changes.next())
     );
   }
 
-  update(company: Company): Observable<Company> {
-    return this.http.put<ApiResponse<Company>>(`${this.apiUrl}/${company.id}`, company).pipe(
-      map(response => response.dados)
+  update(id: number, company: CompanyRequest): Observable<Company> {
+    return this.http.put<ApiResponse<Company>>(`${this.apiUrl}/${id}`, company).pipe(
+      map(response => response.dados),
+      tap(() => this.changes.next())
     );
   }
 
   delete(id: number): Observable<void> {
     return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(
-      map(() => void 0)
+      map(() => void 0),
+      tap(() => this.changes.next())
     );
   }
 

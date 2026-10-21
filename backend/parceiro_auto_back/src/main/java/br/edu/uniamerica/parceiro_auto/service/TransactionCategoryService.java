@@ -29,6 +29,12 @@ public class TransactionCategoryService {
         return transactionalCategoryRepository.findByCompanyAndActiveTrueOrderByName(company);
     }
 
+    @Transactional(readOnly = true)
+    public List<TransactionCategory> findAllByCompany(Company company) {
+        if (company == null) throw new IllegalArgumentException("A empresa nao pode ser nula!");
+        return transactionalCategoryRepository.findByCompanyOrderByName(company);
+    }
+
     // Chamado somente no cadastro da empresa, dentro da mesma transacao.
     public void createDefaults(Company company) {
         transactionalCategoryRepository.saveAll(List.of(

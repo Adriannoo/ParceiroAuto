@@ -5,15 +5,13 @@
   </div>
 
   <div class="actions">
-    <select class="form-select filter-select" [ngModel]="companyId()" (ngModelChange)="setCurrentCompany($event)">
-      @for (company of companies(); track company.id) {
-        <option [ngValue]="company.id">{{ company.tradeName }}</option>
-      }
-    </select>
-
     <a routerLink="/transactions/new" class="btn btn-primary text-nowrap">Novo lançamento</a>
   </div>
 </header>
+
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
 
 @if (loading()) {
   <div class="text-center py-5">
@@ -21,9 +19,9 @@
       <span class="visually-hidden">Carregando</span>
     </div>
   </div>
-} @else if (companies().length === 0) {
+} @else if (!companyId()) {
   <div class="empty">
-    <h2>Comece cadastrando uma empresa</h2>
+    <h2>Selecione uma empresa na sidebar ou cadastre uma empresa</h2>
     <p>Os indicadores aparecem aqui assim que houver lançamentos registrados.</p>
     <a routerLink="/companies/new" class="btn btn-primary">Cadastrar empresa</a>
   </div>

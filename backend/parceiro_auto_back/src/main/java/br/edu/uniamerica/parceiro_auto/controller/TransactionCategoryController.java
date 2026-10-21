@@ -6,8 +6,9 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.category.TransactionCatego
 import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.TransactionCategoryMapper;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.TransactionCategory;
-import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionCategoryService;
+import br.edu.uniamerica.parceiro_auto.service.CompanyAccessService;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -32,15 +33,15 @@ import java.util.List;
 public class TransactionCategoryController {
 
     private final TransactionCategoryService transactionCategoryService;
-    private final CompanyService companyService;
+    private final CompanyAccessService companyAccessService;
 
     // Recebe os services pelo construtor para consultar empresas e gerenciar categorias.
     public TransactionCategoryController(
             TransactionCategoryService transactionCategoryService,
-            CompanyService companyService
+            CompanyAccessService companyAccessService
     ) {
         this.transactionCategoryService = transactionCategoryService;
-        this.companyService = companyService;
+        this.companyAccessService = companyAccessService;
     }
 
     // Endpoint para listar as categorias ativas de uma empresa
@@ -48,13 +49,14 @@ public class TransactionCategoryController {
     // Queremos devolver 200 OK, que e o status generico para sucesso
     @GetMapping("/company/{companyId}")
     @Operation(summary = "Listar categorias de movimentacao da empresa")
-    public ResponseEntity<ApiResponse<List<TransactionCategoryResponseDTO>>> findByCompany(@PathVariable Long companyId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+    public ResponseEntity<ApiResponse<List<TransactionCategoryResponseDTO>>> findByCompany(@PathVariable Long companyId,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
+            HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         // Converte as entidades em DTOs para devolver apenas os dados da resposta.
-        List<TransactionCategoryResponseDTO> categories = transactionCategoryService.findActiveByCompany(company)
-                .stream()
+        List<TransactionCategoryResponseDTO> categories = (includeInactive ? transactionCategoryService.findAllByCompany(company)
+                : transactionCategoryService.findActiveByCompany(company)).stream()
                 .map(TransactionCategoryMapper::toResponseDTO)
                 .toList();
 
@@ -70,10 +72,10 @@ public class TransactionCategoryController {
     @Operation(summary = "Cadastrar categoria de movimentacao")
     public ResponseEntity<ApiResponse<TransactionCategoryResponseDTO>> create(
             @PathVariable Long companyId,
-            @Valid @RequestBody TransactionCategoryRequestDTO dto
+            @Valid @RequestBody TransactionCategoryRequestDTO dto,
+            HttpServletRequest request
     ) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         // O tratamento dos erros fica centralizado no GlobalExceptionHandler.
         TransactionCategory category = transactionCategoryService.createCategory(company, dto.name(), dto.type());
@@ -88,9 +90,8 @@ public class TransactionCategoryController {
     @DeleteMapping("/company/{companyId}/{categoryId}")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Categoria inativada", content = @io.swagger.v3.oas.annotations.media.Content)
     @Operation(summary = "Inativar categoria de movimentacao")
-    public ResponseEntity<Void> delete(@PathVariable Long companyId, @PathVariable Long categoryId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+    public ResponseEntity<Void> delete(@PathVariable Long companyId, @PathVariable Long categoryId, HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         transactionCategoryService.deactivateCategory(company, categoryId);
 
@@ -105,10 +106,10 @@ public class TransactionCategoryController {
     public ResponseEntity<ApiResponse<TransactionCategoryResponseDTO>> update(
             @PathVariable Long companyId,
             @PathVariable Long categoryId,
-            @Valid @RequestBody TransactionCategoryRequestDTO dto
+            @Valid @RequestBody TransactionCategoryRequestDTO dto,
+            HttpServletRequest request
     ) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         TransactionCategory category = transactionCategoryService.updateCategory(company, categoryId, dto.name(), dto.type());
 

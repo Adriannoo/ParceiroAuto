@@ -55,13 +55,17 @@ export class CompanyTransactions implements OnInit {
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      this.error.set('Empresa invalida.');
+      return;
+    }
     this.loading.set(true);
 
     forkJoin({
       company: this.companyService.findById(id),
       transactions: this.transactionService.listByCompany(id),
       bankAccounts: this.bankAccountService.listByCompany(id),
-      categories: this.categoryService.listCategoriesByCompany(id),
+      categories: this.categoryService.listCategoriesByCompany(id, true),
     }).subscribe({
       next: ({ company, transactions, bankAccounts, categories }) => {
         this.company.set(company);

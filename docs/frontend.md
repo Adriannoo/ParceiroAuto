@@ -11,9 +11,9 @@ npm ci
 npm start
 ```
 
-Acesse `http://localhost:4200`. Para as telas de negocio, mantenha o backend em `http://localhost:8080` e o PostgreSQL configurado conforme o README principal. Use `localhost`, pois a origem precisa ser aceita pelo CORS da API.
+Acesse `http://localhost:4200`. O login de exemplo e `gustavo@empresa.com`, senha `123456`; ele abre um ambiente de oficina populado com contas e movimentacoes. Novos usuarios comecam sem empresa e sao direcionados para o cadastro dela. Para as telas de negocio, mantenha o backend em `http://localhost:8080` e o PostgreSQL configurado conforme o README principal. Use `localhost`, pois a origem precisa ser aceita pelo CORS da API.
 
-O login do frontend e simulado no `AuthService`, com usuarios e sessao no navegador. O acesso de demonstracao e `gustavo@empresa.com`, senha `123456`. Esse login nao chama a autenticacao do backend; a avaliacao permite mock.
+O login e o cadastro usam a API do backend. Depois do cadastro, a primeira tela abre o formulario para cadastrar uma empresa. A sessao e validada em GET /api/users/me e encerrada em POST /api/users/logout. Usuarios e senhas nao ficam no localStorage.
 
 ## Organizacao
 
@@ -24,7 +24,7 @@ Os caminhos abaixo ficam dentro de `src/app`:
 | `components` | Login, cadastro e layout com menu lateral. |
 | `pages` | Telas organizadas por funcionalidade. Cada area pode ter seu service e model. |
 | `models` | Tipos compartilhados, como usuario e `ApiResponse<T>`. |
-| `services` | Autenticacao simulada e selecao da empresa atual. |
+| `services` | Autenticacao pelo backend e selecao da empresa atual. |
 | `guards` | Verificacao da sessao antes de entrar nas telas internas. |
 | `app.routes.ts` | Rotas, incluindo `children` para empresas, contas e movimentacoes. |
 | `app.config.ts` | Configuracao do Router, HttpClient e demais providers. |
@@ -40,7 +40,7 @@ O fluxo principal e: **tela -> service Angular -> API -> service Angular -> tela
 | `TransactionService` | `/api/transactions`: lancamentos. |
 | `TransactionCategoryService` | `/api/transaction-categories`: categorias. |
 | `RecurrenceRuleService` | `/api/recurrence-rules`: consulta, edicao e encerramento de recorrencias. |
-| `AuthService` | Login e cadastro simulados no navegador. |
+| `AuthService` | Login, cadastro e sessao pelo backend. |
 | `CurrentCompanyService` | Guarda a empresa selecionada usando signal e localStorage. |
 
 Os tres services financeiros ficam em `pages/transactions`. Categorias e recorrencias foram retiradas do `TransactionService` para cada service atender um controller. Os componentes de dashboard, relatorios, categorias da empresa, lancamentos da empresa, formulario e lista de movimentacoes foram ajustados.
@@ -110,3 +110,7 @@ No navegador, com backend local, foram conferidos login, cadastro de empresa e c
 - Conferir contribuicoes reais dos integrantes, publicar a versao final e entregar ZIP e link do repositorio.
 
 Detalhes por funcionalidade: [empresas](empresa-frontend.md), [contas bancarias](conta-bancaria-frontend.md) e [financeiro e relatorios](financeiro-frontend.md).
+
+As rotas de negocio da API exigem sessao autenticada. O backend filtra empresas e dados financeiros pelos vinculos do usuario autenticado. Para testar pelo Swagger, cadastre-se ou execute /api/users/login primeiro.
+
+As consultas de categorias aceitam includeInactive=true para preservar os nomes no historico. Por padrao, apenas categorias ativas sao retornadas para novos lancamentos.

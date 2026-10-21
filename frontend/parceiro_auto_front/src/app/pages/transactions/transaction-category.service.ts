@@ -10,8 +10,8 @@ export class TransactionCategoryService {
   private http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:8080/api/transaction-categories';
 
-  listCategoriesByCompany(companyId: number): Observable<TransactionCategory[]> {
-    return this.http.get<ApiResponse<TransactionCategory[]>>(`${this.apiUrl}/company/${companyId}`).pipe(
+  listCategoriesByCompany(companyId: number, includeInactive = false): Observable<TransactionCategory[]> {
+    return this.http.get<ApiResponse<TransactionCategory[]>>(`${this.apiUrl}/company/${companyId}${includeInactive ? "?includeInactive=true" : ""}`).pipe(
       map(response => response.dados)
     );
   }

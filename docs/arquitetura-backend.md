@@ -26,15 +26,15 @@ dto/
 
 O salt faz duas senhas iguais produzirem hashes diferentes. Hash nao e criptografia reversivel: o sistema verifica a senha sem recuperar a original. O prefixo `{pbkdf2}` identifica o algoritmo, e o campo do banco aceita 255 caracteres. O hash nao aparece no DTO de resposta nem no `toString` de `User`.
 
-O banco agora inicia do zero com duas migrations SQL em `src/main/resources/db/migration`: V1 cria toda a estrutura, incluindo `password varchar(255)`, e V2 insere os dados de demonstracao. Nao existe conversao de senhas antigas: os usuarios devem ser cadastrados novamente pela API, que ja gera o hash. Bancos com o historico anterior precisam ser recriados antes de iniciar esta versao.
+O banco agora inicia do zero com duas migrations SQL em `src/main/resources/db/migration`: V1 cria toda a estrutura, incluindo `password varchar(255)`, V2 cria o login de exemplo e popula o espaco demonstrativo do Gustavo. Nao existe conversao de senhas antigas: os usuarios devem ser cadastrados novamente pela API, que ja gera o hash. Bancos com o historico anterior precisam ser recriados antes de iniciar esta versao.
 
-O modulo de hash nao implementa sessao, token ou autorizacao das rotas. Essas funcionalidades continuam sendo uma etapa separada.
+O backend mantem a autenticacao em sessao HTTP e exige sessao nas rotas de negocio. A autorizacao por empresa usa os vinculos do usuario com a empresa; usuarios sem vinculo nao podem consultar ou alterar seus dados.
 
 Referencia: [PasswordEncoder e PBKDF2 no Spring Security](https://docs.spring.io/spring-security/reference/features/authentication/password-storage.html).
 
 ## Categorias e Swagger
 
-O GET de categorias apenas consulta, inclusive quando todas estao inativas. As dez categorias padrao sao criadas junto com uma nova empresa, na mesma transacao. A V2 insere essas categorias para a empresa de demonstracao, junto com uma conta de saldo zero, sem criar usuarios ou senhas fixas.
+O GET de categorias apenas consulta, inclusive quando todas estao inativas. As dez categorias padrao sao criadas junto com uma nova empresa, na mesma transacao. A V2 insere as mesmas categorias para a empresa de demonstracao, junto com duas contas e movimentacoes financeiras.
 
 No Swagger, cadastro de categoria documenta `201`; inativacao de categoria e encerramento de recorrencia documentam `204` sem corpo.
 

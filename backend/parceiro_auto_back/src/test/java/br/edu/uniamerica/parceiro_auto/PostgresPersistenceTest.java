@@ -141,14 +141,20 @@ class PostgresPersistenceTest {
         return jdbc.queryForObject("SELECT balance FROM bank_account WHERE id = ?", BigDecimal.class, account);
     }
 
-    // Confere a carga inicial e garante que nao existe senha fixa na instalacao.
+    // A instalacao inicial contem um ambiente de demonstracao vinculado ao usuario Gustavo.
     @Test
-    void seedsDemoCompanyAccountAndCategoriesWithoutUsers() {
-        Long company = jdbc.queryForObject("SELECT id FROM company WHERE cnpj = '11222333000181'", Long.class);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM transaction_category WHERE fk_id_company = ? AND active", Integer.class, company)).isEqualTo(10);
-        assertThat(jdbc.queryForObject("SELECT balance FROM bank_account WHERE fk_id_company = ? AND default_account", BigDecimal.class, company)).isEqualByComparingTo("0.00");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class)).isZero();
+    void seedsOneDemoWorkspaceForGustavo() {
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT name FROM app_user WHERE login = 'gustavo@empresa.com'", String.class))
+                .isEqualTo("Gustavo");
+        assertThat(jdbc.queryForObject("SELECT password FROM app_user WHERE login = 'gustavo@empresa.com'", String.class))
+                .startsWith("{pbkdf2}");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM company", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM user_company uc JOIN app_user u ON u.id = uc.fk_id_user WHERE u.login = 'gustavo@empresa.com' AND uc.role = 'OWNER'", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM bank_account", Integer.class)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM transaction_category", Integer.class)).isEqualTo(10);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM transaction", Integer.class)).isEqualTo(7);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM recurrence_rule", Integer.class)).isEqualTo(1);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM transaction_category WHERE fk_id_company = ?", Integer.class, company)).isEqualTo(10);
     }
 }

@@ -6,8 +6,8 @@ logging.level.org.springframework=ERROR
 spring.jpa.hibernate.ddl-auto=validate
 
 spring.datasource.url=jdbc:postgresql://localhost:5432/parceiro_auto
-spring.datasource.username=usuario
-spring.datasource.password=senha
+spring.datasource.username=${DB_USER:postgres}
+spring.datasource.password=${DB_PASSWORD:}
 spring.jpa.show-sql=false
 
 spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true

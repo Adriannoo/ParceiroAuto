@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TransactionCategoryRepository extends JpaRepository<TransactionCategory, Long> {
+    List<TransactionCategory> findByCompanyOrderByName(Company company);
+
     List<TransactionCategory> findByCompanyAndActiveTrueOrderByName(Company company);
 
     Optional<TransactionCategory> findByCompanyAndNameIgnoreCase(Company company, String name);

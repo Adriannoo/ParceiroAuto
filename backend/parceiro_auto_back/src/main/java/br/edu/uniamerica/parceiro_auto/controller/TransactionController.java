@@ -7,12 +7,12 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.mapper.TransactionMapper;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.entity.Transaction;
-import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
-import br.edu.uniamerica.parceiro_auto.service.CompanyService;
 import br.edu.uniamerica.parceiro_auto.service.RecurrenceRuleService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionApplicationService;
 import br.edu.uniamerica.parceiro_auto.service.TransactionService;
+import br.edu.uniamerica.parceiro_auto.service.CompanyAccessService;
+import jakarta.servlet.http.HttpServletRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,24 +31,24 @@ import java.util.List;
 @RequestMapping("api/transactions")
 public class TransactionController {
     private final TransactionService transactionService;
-    private final CompanyService companyService;
     private final BankAccountService bankAccountService;
     private final TransactionApplicationService transactionApplicationService;
     private final RecurrenceRuleService recurrenceRuleService;
+    private final CompanyAccessService companyAccessService;
 
     // Recebe os services usados nas movimentacoes, nos vinculos e nas regras de recorrencia.
     public TransactionController(
             TransactionService transactionService,
-            CompanyService companyService,
             BankAccountService bankAccountService,
             TransactionApplicationService transactionApplicationService,
-            RecurrenceRuleService recurrenceRuleService
+            RecurrenceRuleService recurrenceRuleService,
+            CompanyAccessService companyAccessService
     ) {
         this.transactionService = transactionService;
-        this.companyService = companyService;
         this.bankAccountService = bankAccountService;
         this.transactionApplicationService = transactionApplicationService;
         this.recurrenceRuleService = recurrenceRuleService;
+        this.companyAccessService = companyAccessService;
     }
 
 
@@ -57,9 +57,10 @@ public class TransactionController {
     // Queremos devolver 200 OK, que e o status generico para sucesso
     @GetMapping
     @Operation(summary = "Listar movimentações")
-    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findAll() {
+    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findAll(HttpServletRequest request) {
         // Converte cada movimentacao em DTO e inclui sua regra de recorrencia, quando houver.
-        List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findAll());
+        List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(
+                transactionService.findAllByUser(companyAccessService.currentUserId(request)));
 
         return ResponseEntity.ok(new ApiResponse<>("Transacoes listadas com sucesso!", transacoes));
     }
@@ -69,8 +70,9 @@ public class TransactionController {
     // Queremos devolver 200 OK, que e o status generico para sucesso
     @GetMapping("/{id}")
     @Operation(summary = "Buscar movimentação por ID")
-    public ResponseEntity<ApiResponse<TransactionResponseDTO>> findById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<TransactionResponseDTO>> findById(@PathVariable Long id, HttpServletRequest request) {
         Transaction transaction = transactionService.findById(id);
+        companyAccessService.requireAccess(transaction.getCompany(), request);
 
         return ResponseEntity.ok(new ApiResponse<>("Transacao encontrada com sucesso!", TransactionMapper.toResponseDTO(transaction, recurrenceRuleService.findByTransaction(transaction))));
     }
@@ -82,7 +84,8 @@ public class TransactionController {
     @PostMapping
     @Operation(summary = "Criar movimentação")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
-    public ResponseEntity<ApiResponse<TransactionResponseDTO>> create(@Validated(TransactionRequestDTO.Create.class) @RequestBody TransactionRequestDTO dto) {
+    public ResponseEntity<ApiResponse<TransactionResponseDTO>> create(@Validated(TransactionRequestDTO.Create.class) @RequestBody TransactionRequestDTO dto, HttpServletRequest request) {
+        companyAccessService.requireAccess(dto.companyId(), request);
         // O service salva movimentacao, saldo e recorrencia como uma unica operacao.
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Transacao criada com sucesso!", transactionApplicationService.create(dto)));
@@ -93,8 +96,9 @@ public class TransactionController {
     // Queremos devolver 200 OK com a lista de movimentacoes
     @GetMapping("/bank-account/{bankAccountId}")
     @Operation(summary = "Listar movimentações de uma conta")
-    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByBankAccount(@PathVariable Long bankAccountId) {
+    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByBankAccount(@PathVariable Long bankAccountId, HttpServletRequest request) {
         BankAccount bankAccount = bankAccountService.findById(bankAccountId);
+        companyAccessService.requireAccess(bankAccount.getCompany(), request);
 
         List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findByBankAccount(bankAccount));
 
@@ -106,9 +110,8 @@ public class TransactionController {
     // Queremos devolver 200 OK com a lista de movimentacoes
     @GetMapping("/company/{companyId}")
     @Operation(summary = "Listar movimentações de uma empresa")
-    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByCompany(@PathVariable Long companyId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
+    public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findByCompany(@PathVariable Long companyId, HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findByCompany(company));
 
@@ -124,9 +127,9 @@ public class TransactionController {
     public ResponseEntity<ApiResponse<List<TransactionResponseDTO>>> findLastByCompany(
             @PathVariable Long companyId,
             @Parameter(description = "Quantidade de movimentacoes, entre 1 e 100", schema = @Schema(minimum = "1", maximum = "100"))
-            @RequestParam int limit) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada"));
+            @RequestParam int limit,
+            HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         List<TransactionResponseDTO> transacoes = transactionApplicationService.toResponseDTOs(transactionService.findLastByCompany(company, limit));
 
@@ -139,7 +142,8 @@ public class TransactionController {
     // @Valid verifica as regras comuns do DTO; a empresa original da movimentacao e mantida.
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar movimentação")
-    public ResponseEntity<ApiResponse<TransactionResponseDTO>> update(@PathVariable Long id, @Valid @RequestBody TransactionRequestDTO dto) {
+    public ResponseEntity<ApiResponse<TransactionResponseDTO>> update(@PathVariable Long id, @Valid @RequestBody TransactionRequestDTO dto, HttpServletRequest request) {
+        companyAccessService.requireAccess(transactionService.findById(id).getCompany(), request);
         // Uma falha na recorrencia tambem desfaz a atualizacao da movimentacao e do saldo.
         return ResponseEntity.ok(new ApiResponse<>("Transacao atualizada com sucesso!", transactionApplicationService.update(id, dto)));
     }
@@ -150,7 +154,8 @@ public class TransactionController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir movimentação")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Excluído com sucesso, sem corpo de resposta", content = @io.swagger.v3.oas.annotations.media.Content)
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, HttpServletRequest request) {
+        companyAccessService.requireAccess(transactionService.findById(id).getCompany(), request);
         // O service remove a regra, reverte o saldo e exclui a movimentacao juntos.
         transactionApplicationService.delete(id);
         return ResponseEntity.noContent().build();

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CompanyService } from '../company.service';
-import { LEGAL_NATURES, COMPANY_SIZES, TAX_REGIMES, STATES } from '../company.model';
+import { LEGAL_NATURES, COMPANY_SIZES, TAX_REGIMES, STATES, LegalNature, TaxRegime, CompanySize } from '../company.model';
 import {
   cnpjValidator,
   formatPostalCode,
@@ -31,26 +31,26 @@ export class CompanyForm implements OnInit {
   saving = signal(false);
   error = signal<string | null>(null);
 
-  form = this.fb.group({
-    legalName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
-    tradeName: ['', [Validators.required, Validators.maxLength(80)]],
+  form = this.fb.nonNullable.group({
+    legalName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
+    tradeName: ['', [Validators.required, Validators.maxLength(50)]],
     cnpj: ['', [Validators.required, cnpjValidator]],
-    stateRegistration: ['', [Validators.maxLength(20)]],
+    stateRegistration: ['', [Validators.maxLength(30)]],
 
-    legalNature: ['LTDA', [Validators.required]],
-    taxRegime: ['SIMPLES_NACIONAL', [Validators.required]],
-    size: ['ME', [Validators.required]],
+    legalNature: ['LTDA' as LegalNature, [Validators.required]],
+    taxRegime: ['SIMPLES_NACIONAL' as TaxRegime, [Validators.required]],
+    size: ['ME' as CompanySize, [Validators.required]],
 
     postalCode: ['', [Validators.required, Validators.pattern(/^\d{5}-\d{3}$/)]],
-    street: ['', [Validators.required]],
-    streetNumber: ['', [Validators.required]],
-    addressComplement: [''],
-    neighborhood: ['', [Validators.required]],
-    city: ['', [Validators.required]],
+    street: ['', [Validators.required, Validators.maxLength(100)]],
+    streetNumber: ['', [Validators.required, Validators.maxLength(10)]],
+    addressComplement: ['', [Validators.maxLength(100)]],
+    neighborhood: ['', [Validators.required, Validators.maxLength(80)]],
+    city: ['', [Validators.required, Validators.maxLength(80)]],
     state: ['', [Validators.required]],
 
     phone: ['', [Validators.required, Validators.pattern(/^\(\d{2}\)\s\d{4,5}-\d{4}$/)]],
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
 
     active: [true],
   });
@@ -63,6 +63,11 @@ export class CompanyForm implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
 
     if (id) {
+      if (!Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
+        this.error.set('Empresa invalida.');
+        this.form.disable();
+        return;
+      }
       this.companyId.set(Number(id));
       this.load(Number(id));
     }
@@ -112,6 +117,7 @@ export class CompanyForm implements OnInit {
   save(): void {
     this.error.set(null);
 
+    if (this.saving() || this.form.disabled) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.error.set('Existem campos obrigatórios pendentes. Revise as seções destacadas.');
@@ -124,8 +130,8 @@ export class CompanyForm implements OnInit {
     this.saving.set(true);
 
     const request = id
-      ? this.companyService.update({ id, ...data } as any)
-      : this.companyService.create(data as any);
+      ? this.companyService.update(id, data)
+      : this.companyService.create(data);
 
     request.subscribe({
       next: () => this.router.navigate(['/companies']),

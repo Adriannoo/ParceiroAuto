@@ -8,7 +8,8 @@ import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import br.edu.uniamerica.parceiro_auto.exception.ResourceNotFoundException;
 import br.edu.uniamerica.parceiro_auto.service.BankAccountService;
-import br.edu.uniamerica.parceiro_auto.service.CompanyService;
+import br.edu.uniamerica.parceiro_auto.service.CompanyAccessService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,10 +25,10 @@ import java.util.List;
 @RequestMapping("api/bank-accounts")
 public class BankAccountController {
     private final BankAccountService bankAccountService;
-    private final CompanyService companyService;
-    public BankAccountController(BankAccountService bankAccountService, CompanyService companyService) {
+    private final CompanyAccessService companyAccessService;
+    public BankAccountController(BankAccountService bankAccountService, CompanyAccessService companyAccessService) {
         this.bankAccountService = bankAccountService;
-        this.companyService = companyService;
+        this.companyAccessService = companyAccessService;
     }
 
     // Endpoint para criar uma nova conta bancaria
@@ -38,9 +39,10 @@ public class BankAccountController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> create(
             @PathVariable Long companyId,
-            @Valid @RequestBody BankAccountRequestDTO dto
+            @Valid @RequestBody BankAccountRequestDTO dto,
+            HttpServletRequest request
     ) {
-        Company company = findCompanyOrThrow(companyId);
+        Company company = findCompanyOrThrow(companyId, request);
 
         BankAccount bankAccount = bankAccountService.createBankAccount(
                 company,
@@ -59,8 +61,8 @@ public class BankAccountController {
     // GET localhost:8080/api/bank-accounts/company/{companyId}
     @GetMapping("/company/{companyId}")
     @Operation(summary = "Listar contas de uma empresa")
-    public ResponseEntity<ApiResponse<List<BankAccountResponseDTO>>> findByCompany(@PathVariable Long companyId) {
-        Company company = findCompanyOrThrow(companyId);
+    public ResponseEntity<ApiResponse<List<BankAccountResponseDTO>>> findByCompany(@PathVariable Long companyId, HttpServletRequest request) {
+        Company company = findCompanyOrThrow(companyId, request);
 
         List<BankAccountResponseDTO> accounts = bankAccountService.findByCompany(company)
                 .stream()
@@ -74,8 +76,8 @@ public class BankAccountController {
     // GET localhost:8080/api/bank-accounts/company/{companyId}/default
     @GetMapping("/company/{companyId}/default")
     @Operation(summary = "Buscar conta padrão da empresa")
-    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findByDefault(@PathVariable Long companyId) {
-        Company company = findCompanyOrThrow(companyId);
+    public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findByDefault(@PathVariable Long companyId, HttpServletRequest request) {
+        Company company = findCompanyOrThrow(companyId, request);
         BankAccount bankAccount = bankAccountService.findDefaultByCompany(company);
 
         if (bankAccount == null) {
@@ -90,9 +92,10 @@ public class BankAccountController {
     @GetMapping("/company/{companyId}/accounts/{id}")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> findById(
             @PathVariable Long companyId,
-            @PathVariable Long id
+            @PathVariable Long id,
+            HttpServletRequest request
     ) {
-        Company company = findCompanyOrThrow(companyId);
+        Company company = findCompanyOrThrow(companyId, request);
         BankAccount bankAccount = bankAccountService.findById(id);
         validateAccountBelongsToCompany(company, bankAccount);
 
@@ -106,9 +109,10 @@ public class BankAccountController {
     @Operation(summary = "Definir conta padrão")
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> defineDefault(
             @PathVariable Long companyId,
-            @PathVariable Long id
+            @PathVariable Long id,
+            HttpServletRequest request
     ) {
-        Company company = findCompanyOrThrow(companyId);
+        Company company = findCompanyOrThrow(companyId, request);
         BankAccount bankAccount = bankAccountService.findById(id);
 
         BankAccount updated = bankAccountService.defineDefaultAccount(company, bankAccount);
@@ -124,9 +128,10 @@ public class BankAccountController {
     public ResponseEntity<ApiResponse<BankAccountResponseDTO>> update(
             @PathVariable Long companyId,
             @PathVariable Long id,
-            @Valid @RequestBody BankAccountRequestDTO dto
+            @Valid @RequestBody BankAccountRequestDTO dto,
+            HttpServletRequest request
     ) {
-        Company company = findCompanyOrThrow(companyId);
+        Company company = findCompanyOrThrow(companyId, request);
         BankAccount bankAccount = bankAccountService.findById(id);
 
         BankAccount updated = bankAccountService.updateBankAccount(
@@ -150,9 +155,10 @@ public class BankAccountController {
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Excluído com sucesso, sem corpo de resposta", content = @io.swagger.v3.oas.annotations.media.Content)
     public ResponseEntity<Void> delete(
             @PathVariable Long companyId,
-            @PathVariable Long id
+            @PathVariable Long id,
+            HttpServletRequest request
     ) {
-        Company company = findCompanyOrThrow(companyId);
+        Company company = findCompanyOrThrow(companyId, request);
         BankAccount bankAccount = bankAccountService.findById(id);
 
         bankAccountService.deleteBankAccount(company, bankAccount);
@@ -160,9 +166,8 @@ public class BankAccountController {
         return ResponseEntity.noContent().build();
     }
 
-    private Company findCompanyOrThrow(Long companyId) {
-        return companyService.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa nao encontrada!"));
+    private Company findCompanyOrThrow(Long companyId, HttpServletRequest request) {
+        return companyAccessService.requireCompany(companyId, request);
     }
 
     private void validateAccountBelongsToCompany(Company company, BankAccount bankAccount) {
