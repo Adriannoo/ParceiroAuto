@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { CurrentCompanyService } from '../../../services/current-company.service';
 import { CompanyService } from '../company.service';
 import {
   Company,
@@ -21,6 +22,7 @@ type SortDirection = 'asc' | 'desc';
 })
 export class CompanyList implements OnInit {
   private companyService = inject(CompanyService);
+  private currentCompanyService = inject(CurrentCompanyService);
 
   taxRegimes = TAX_REGIMES;
 
@@ -74,6 +76,7 @@ export class CompanyList implements OnInit {
     this.companyService.list().subscribe({
       next: (companies) => {
         this.companies.set(companies);
+        this.currentCompanyService.ensureCompany(companies.filter(company => company.active).map(company => company.id));
         this.loading.set(false);
       },
       error: () => this.loading.set(false),

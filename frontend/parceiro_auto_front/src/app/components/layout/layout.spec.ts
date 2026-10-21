@@ -1,6 +1,6 @@
 ﻿import { provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 import { CompanyService } from '../../pages/companies/company.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -14,7 +14,7 @@ describe('Layout', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: CompanyService, useValue: { list: () => of([]) } },
+        { provide: CompanyService, useValue: { companiesChanged: EMPTY, list: () => of([]) } },
         { provide: AuthService, useValue: { getCurrentUser: () => null, logout: () => undefined } },
       ],
       imports: [Layout],

@@ -33,6 +33,11 @@ describe('Reports', () => {
     await fixture.whenStable();
   });
 
+  it('preserva o nome da categoria inativa no historico', () => {
+    component.categories.set([{ id: 8, companyId: 2, name: 'Vendas antigas', type: 'ENTRADA', active: false }]);
+    expect(component.categoryName(8)).toBe('Vendas antigas');
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });

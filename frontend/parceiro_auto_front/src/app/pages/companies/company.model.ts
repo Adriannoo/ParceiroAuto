@@ -35,6 +35,8 @@ export interface Company {
   active: boolean;
 }
 
+export type CompanyRequest = Omit<Company, 'id' | 'userIds'>;
+
 export interface CompanyLookup {
   legalName: string;
   tradeName: string;

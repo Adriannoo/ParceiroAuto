@@ -127,6 +127,11 @@ public class TransactionService {
         return transactionRepository.findAllByOrderByDateDescIdDesc();
     }
 
+    @Transactional(readOnly = true)
+    public List<Transaction> findAllByUser(Long userId) {
+        return transactionRepository.findAllByCompany_UserCompanies_User_IdOrderByDateDescIdDesc(userId);
+    }
+
     // Busca todas as transações de uma conta bancária.
     @Transactional(readOnly = true)
     public List<Transaction> findByBankAccount(BankAccount bankAccount) {

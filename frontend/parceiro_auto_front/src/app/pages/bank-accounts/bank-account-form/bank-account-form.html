@@ -6,29 +6,11 @@
       <div class="alert alert-danger">{{ error() }}</div>
     }
 
+    @if (!companyId()) {
+      <a routerLink="/companies" class="btn btn-link">Selecionar ou cadastrar empresa</a>
+    }
+
     <form [formGroup]="form" (ngSubmit)="save()" novalidate>
-      <h3 class="section">Vinculo</h3>
-
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label class="form-label" for="companyId">Empresa</label>
-          <select id="companyId" class="form-select"
-            [class.is-invalid]="isInvalid('companyId')" formControlName="companyId">
-            <option [ngValue]="null">
-              {{ loadingCompanies() ? 'Carregando empresas...' : 'Selecione uma empresa' }}
-            </option>
-            @for (company of companies(); track company.id) {
-              <option [ngValue]="company.id">
-                {{ company.tradeName }} - {{ company.cnpj }}
-              </option>
-            }
-          </select>
-          @if (isInvalid('companyId')) {
-            <div class="invalid-feedback d-block">Selecione uma empresa.</div>
-          }
-        </div>
-      </div>
-
       <h3 class="section">Dados da conta</h3>
 
       <div class="row">
@@ -78,7 +60,7 @@
       <div class="d-flex flex-wrap gap-2 justify-content-end">
         <a routerLink="/bank-accounts" class="btn btn-light">Cancelar</a>
         <button type="button" class="btn btn-outline-secondary" (click)="reset()">Limpar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        <button type="submit" class="btn btn-primary" [disabled]="saving() || loading() || form.disabled">
           @if (saving()) {
             <span class="spinner-border spinner-border-sm me-2"></span>
           }

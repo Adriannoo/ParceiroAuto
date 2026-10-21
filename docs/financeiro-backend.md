@@ -1,4 +1,4 @@
-﻿# Financeiro - Backend
+# Financeiro - Backend
 
 Este documento resume a parte de backend das funcionalidades financeiras ajustadas nesta entrega.
 
@@ -89,9 +89,10 @@ V2__insert_initial_data.sql
 ```
 
 A V1 ja cria IDs e chaves estrangeiras bigint, os campos completos da empresa,
-o campo de hash da senha e a frequencia de recorrencia. A V2 insere uma empresa
-de demonstracao, uma conta com saldo zero e dez categorias, sem usuario ou senha fixa.
-Quem possui o historico antigo precisa recriar o banco de desenvolvimento.
+o campo de hash da senha e a frequencia de recorrencia. V2 cria o usuario de
+demonstracao e popula o ambiente do Gustavo com empresa, duas contas, dez
+categorias, movimentacoes e recorrencia. Quem possui o historico antigo precisa
+recriar o banco de desenvolvimento.
 
 ## Validacoes
 

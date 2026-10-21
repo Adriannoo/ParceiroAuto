@@ -5,7 +5,8 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.recurrence.RecurrenceRuleR
 import br.edu.uniamerica.parceiro_auto.controller.dto.recurrence.RecurringTransactionResponseDTO;
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 import jakarta.validation.Valid;
-import br.edu.uniamerica.parceiro_auto.service.CompanyService;
+import br.edu.uniamerica.parceiro_auto.service.CompanyAccessService;
+import jakarta.servlet.http.HttpServletRequest;
 import br.edu.uniamerica.parceiro_auto.service.RecurrenceRuleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,11 +29,11 @@ import java.util.List;
 @RequestMapping("api/recurrence-rules")
 public class RecurrenceRuleController {
     private final RecurrenceRuleService recurrenceRuleService;
-    private final CompanyService companyService;
+    private final CompanyAccessService companyAccessService;
 
-    public RecurrenceRuleController(RecurrenceRuleService recurrenceRuleService, CompanyService companyService) {
+    public RecurrenceRuleController(RecurrenceRuleService recurrenceRuleService, CompanyAccessService companyAccessService) {
         this.recurrenceRuleService = recurrenceRuleService;
-        this.companyService = companyService;
+        this.companyAccessService = companyAccessService;
     }
 
     // GET: consulta as proximas datas; nao cria novas movimentacoes.
@@ -40,10 +41,10 @@ public class RecurrenceRuleController {
     @Operation(summary = "Listar proximas movimentacoes recorrentes")
     public ResponseEntity<ApiResponse<List<RecurringTransactionResponseDTO>>> findNextByCompany(
             @PathVariable Long companyId,
-            @RequestParam(defaultValue = "3") int limit
+            @RequestParam(defaultValue = "3") int limit,
+            HttpServletRequest request
     ) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         return ResponseEntity.ok(new ApiResponse<>(
                 "Proximas recorrencias listadas com sucesso!",
@@ -54,9 +55,8 @@ public class RecurrenceRuleController {
     // GET: lista as regras que ainda possuem uma proxima data disponivel.
     @GetMapping("/company/{companyId}")
     @Operation(summary = "Listar recorrencias da empresa")
-    public ResponseEntity<ApiResponse<List<RecurringTransactionResponseDTO>>> findByCompany(@PathVariable Long companyId) {
-        Company company = companyService.findById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa nao encontrada"));
+    public ResponseEntity<ApiResponse<List<RecurringTransactionResponseDTO>>> findByCompany(@PathVariable Long companyId, HttpServletRequest request) {
+        Company company = companyAccessService.requireCompany(companyId, request);
 
         return ResponseEntity.ok(new ApiResponse<>(
                 "Recorrencias listadas com sucesso!",
@@ -69,8 +69,12 @@ public class RecurrenceRuleController {
     @Operation(summary = "Editar recorrencia")
     public ResponseEntity<ApiResponse<RecurringTransactionResponseDTO>> update(
             @PathVariable Long id,
-            @Valid @RequestBody RecurrenceRuleRequestDTO dto
+            @Valid @RequestBody RecurrenceRuleRequestDTO dto,
+            HttpServletRequest request
     ) {
+        var rule = recurrenceRuleService.findById(id);
+        if (rule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recorrencia nao encontrada");
+        companyAccessService.requireAccess(rule.getTransaction().getCompany(), request);
         RecurringTransactionResponseDTO updated = recurrenceRuleService.update(id, dto.frequency(), dto.endDate());
         if (updated == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recorrencia nao encontrada");
@@ -82,7 +86,10 @@ public class RecurrenceRuleController {
     @DeleteMapping("/{id}")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Recorrencia encerrada", content = @io.swagger.v3.oas.annotations.media.Content)
     @Operation(summary = "Encerrar recorrencia")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, HttpServletRequest request) {
+        var rule = recurrenceRuleService.findById(id);
+        if (rule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recorrencia nao encontrada");
+        companyAccessService.requireAccess(rule.getTransaction().getCompany(), request);
         if (!recurrenceRuleService.delete(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Recorrencia nao encontrada");
         }

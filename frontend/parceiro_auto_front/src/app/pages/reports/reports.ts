@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, computed, inject, signal } from '@angular/core';
+﻿import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { BankAccount } from '../bank-accounts/bank-account.model';
@@ -47,6 +47,7 @@ export class Reports implements OnInit {
   exportModalOpen = signal(false);
 
   companyId = signal<NumberFilter>('all');
+  private companyFilterChanged = false;
   type = signal<TypeFilter>('all');
   categoryId = signal<NumberFilter>('all');
   bankAccountId = signal<NumberFilter>('all');
@@ -122,6 +123,13 @@ export class Reports implements OnInit {
 
   balance = computed(() => this.totalIncome() - this.totalExpense());
 
+  constructor() {
+    effect(() => {
+      const currentCompanyId = this.currentCompanyService.currentCompanyId();
+      if (!this.companyFilterChanged) this.companyId.set(currentCompanyId ?? 'all');
+    });
+  }
+
   ngOnInit(): void {
     const currentCompanyId = this.currentCompanyService.currentCompanyId();
 
@@ -149,7 +157,7 @@ export class Reports implements OnInit {
 
         return forkJoin({
           bankAccounts: forkJoin(companies.map((company) => this.bankAccountService.listByCompany(company.id))),
-          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id))),
+          categories: forkJoin(companies.map((company) => this.categoryService.listCategoriesByCompany(company.id, true))),
         });
       }),
     ).subscribe({
@@ -163,6 +171,7 @@ export class Reports implements OnInit {
   }
 
   onCompanyChange(companyId: NumberFilter): void {
+    this.companyFilterChanged = true;
     this.companyId.set(companyId);
     this.categoryId.set('all');
     this.bankAccountId.set('all');
@@ -174,6 +183,7 @@ export class Reports implements OnInit {
   }
 
   clearFilters(): void {
+    this.companyFilterChanged = false;
     this.companyId.set(this.currentCompanyService.currentCompanyId() ?? 'all');
     this.type.set('all');
     this.categoryId.set('all');

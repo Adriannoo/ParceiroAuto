@@ -20,14 +20,14 @@ export class BankAccountService {
     );
   }
 
-  create(bankAccount: BankAccountRequest): Observable<BankAccount> {
-    return this.http.post<ApiResponse<BankAccount>>(`${this.apiUrl}/company/${bankAccount.companyId}`, bankAccount).pipe(
+  create(companyId: number, bankAccount: BankAccountRequest): Observable<BankAccount> {
+    return this.http.post<ApiResponse<BankAccount>>(`${this.apiUrl}/company/${companyId}`, bankAccount).pipe(
       map(response => response.dados)
     );
   }
 
-  update(id: number, bankAccount: BankAccountRequest): Observable<BankAccount> {
-    return this.http.put<ApiResponse<BankAccount>>(`${this.apiUrl}/company/${bankAccount.companyId}/accounts/${id}`, bankAccount).pipe(
+  update(companyId: number, id: number, bankAccount: BankAccountRequest): Observable<BankAccount> {
+    return this.http.put<ApiResponse<BankAccount>>(`${this.apiUrl}/company/${companyId}/accounts/${id}`, bankAccount).pipe(
       map(response => response.dados)
     );
   }

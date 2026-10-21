@@ -9,6 +9,7 @@ export class CurrentCompanyService {
   currentCompanyId = this.currentCompanyIdSignal.asReadonly();
 
   setCurrentCompanyId(companyId: number | null): void {
+    companyId = Number.isSafeInteger(companyId) && companyId! > 0 ? companyId : null;
     this.currentCompanyIdSignal.set(companyId);
 
     if (companyId === null) {
@@ -20,6 +21,7 @@ export class CurrentCompanyService {
   }
 
   ensureCompany(companyIds: number[]): void {
+    companyIds = companyIds.filter(id => Number.isSafeInteger(id) && id > 0);
     const current = this.currentCompanyIdSignal();
 
     if (current && companyIds.includes(current)) {
@@ -31,6 +33,6 @@ export class CurrentCompanyService {
 
   private readStoredCompanyId(): number | null {
     const value = Number(localStorage.getItem(CURRENT_COMPANY_KEY));
-    return Number.isFinite(value) && value > 0 ? value : null;
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
   }
 }

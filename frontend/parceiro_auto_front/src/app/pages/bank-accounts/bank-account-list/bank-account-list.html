@@ -10,21 +10,11 @@
   <a routerLink="new" class="btn btn-primary text-nowrap">Nova conta</a>
 </div>
 
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
+
 <div class="filters">
-  <select
-    class="form-select company-select"
-    [ngModel]="selectedCompanyId()"
-    (ngModelChange)="onCompanyChange($event)"
-    [disabled]="loadingCompanies() || companies().length === 0">
-    @if (companies().length === 0) {
-      <option [ngValue]="null">Nenhuma empresa cadastrada</option>
-    }
-
-    @for (company of companies(); track company.id) {
-      <option [ngValue]="company.id">{{ company.tradeName || company.legalName }}</option>
-    }
-  </select>
-
   <input
     type="search"
     class="form-control search"
@@ -52,9 +42,9 @@
           <span class="visually-hidden">Carregando</span>
         </div>
       </div>
-    } @else if (companies().length === 0) {
+    } @else if (!selectedCompanyId()) {
       <div class="text-center py-5 px-3">
-        <p class="text-muted mb-3">Cadastre uma empresa antes de cadastrar contas bancárias.</p>
+        <p class="text-muted mb-3">Selecione uma empresa na sidebar ou cadastre uma empresa para continuar.</p>
         <a routerLink="/companies/new" class="btn btn-primary">Cadastrar empresa</a>
       </div>
     } @else if (filtered().length === 0) {

@@ -5,6 +5,6 @@ import br.edu.uniamerica.parceiro_auto.entity.User;
 
 public class UserMapper {
     public static UserResponseDTO toResponseDTO(User user) {
-        return new UserResponseDTO(user.getId(), user.getLogin());
+        return new UserResponseDTO(user.getId(), user.getLogin(), user.getName());
     }
 }

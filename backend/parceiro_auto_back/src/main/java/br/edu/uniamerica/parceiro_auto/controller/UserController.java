@@ -10,6 +10,8 @@ import br.edu.uniamerica.parceiro_auto.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import br.edu.uniamerica.parceiro_auto.controller.dto.user.UserRegistrationDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,8 +33,9 @@ public class UserController {
     @PostMapping
     @Operation(summary = "Cadastrar usuário")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Criado com sucesso", useReturnTypeSchema = true)
-    public ResponseEntity<ApiResponse<UserResponseDTO>> create(@Valid @RequestBody UserRequestDTO dto) {
-        User user = userService.createUser(dto.login(), dto.password());
+    public ResponseEntity<ApiResponse<UserResponseDTO>> create(@Valid @RequestBody UserRegistrationDTO dto, HttpServletRequest request) {
+        User user = userService.createUser(dto.login(), dto.password(), dto.name());
+        startSession(request, user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>("Usuario criado com sucesso!", UserMapper.toResponseDTO(user)));
@@ -43,14 +46,39 @@ public class UserController {
     // POST localhost:8080/api/users/login
     @PostMapping("/login")
     @Operation(summary = "Autenticar usuário")
-    public ResponseEntity<ApiResponse<UserResponseDTO>> authenticate(@Valid @RequestBody UserRequestDTO dto) {
+    public ResponseEntity<ApiResponse<UserResponseDTO>> authenticate(@Valid @RequestBody UserRequestDTO dto, HttpServletRequest request) {
         User user = userService.authenticate(dto.login(), dto.password());
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login ou senha invalidos!");
         }
 
+        startSession(request, user);
         return ResponseEntity.ok(new ApiResponse<>("Login realizado com sucesso!", UserMapper.toResponseDTO(user)));
+    }
+
+    private void startSession(HttpServletRequest request, User user) {
+        var previous = request.getSession(false);
+        if (previous != null) previous.invalidate();
+        var session = request.getSession(true);
+        session.setAttribute("userId", user.getId());
+        session.setMaxInactiveInterval(1800);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> currentUser(HttpServletRequest request) {
+        var session = request.getSession(false);
+        Long id = session == null ? null : (Long) session.getAttribute("userId");
+        var user = userService.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sessao expirada. Entre novamente."));
+        return ResponseEntity.ok(new ApiResponse<>("Usuario autenticado", UserMapper.toResponseDTO(user)));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        var session = request.getSession(false);
+        if (session != null) session.invalidate();
+        return ResponseEntity.noContent().build();
     }
 
     // Endpoint para buscar um usuario pelo id

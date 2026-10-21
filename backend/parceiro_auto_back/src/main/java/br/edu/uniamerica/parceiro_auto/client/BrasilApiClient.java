@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 // O Feign cria a chamada HTTP a partir desta interface e converte o JSON em DTO.
-@FeignClient(name = "brasilApi", url = "${integrations.brasil-api.url}")
+@FeignClient(name = "brasilApi", url = "${integrations.brasil-api.url:https://brasilapi.com.br}")
 public interface BrasilApiClient {
 
     @GetMapping("/api/cnpj/v1/{cnpj}")

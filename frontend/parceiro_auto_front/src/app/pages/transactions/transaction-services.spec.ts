@@ -38,6 +38,13 @@ describe('Contratos HTTP dos services financeiros', () => {
     remove.flush(null, { status: 204, statusText: 'No Content' });
   });
 
+  it('inclui categorias inativas somente quando solicitado pelo historico', () => {
+    const service = TestBed.inject(TransactionCategoryService);
+    const category = { id: 8, companyId: 2, name: 'Vendas', type: 'ENTRADA', active: false };
+    service.listCategoriesByCompany(2, true).subscribe(value => expect(value).toEqual([category]));
+    http.expectOne(base + '/transaction-categories/company/2?includeInactive=true').flush({ dados: [category] });
+  });
+
   it('consulta e modifica recorrencias sem usar o endpoint de transacoes', () => {
     const service = TestBed.inject(RecurrenceRuleService);
     service.listNextRecurringByCompany(2, 3).subscribe(value => expect(value).toEqual([]));

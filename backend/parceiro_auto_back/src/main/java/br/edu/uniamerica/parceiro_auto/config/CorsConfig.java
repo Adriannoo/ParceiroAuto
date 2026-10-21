@@ -17,6 +17,7 @@ public class CorsConfig {
             HttpServletResponse response = (HttpServletResponse) servletResponse;
 
             response.setHeader("Access-Control-Allow-Origin", "http://localhost:4200");
+            response.setHeader("Access-Control-Allow-Credentials", "true");
             response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
             response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
             response.setHeader("Access-Control-Max-Age", "3600");
@@ -26,6 +27,14 @@ public class CorsConfig {
                 return;
             }
 
+            String origin = request.getHeader("Origin");
+            String ownOrigin = request.getScheme() + "://" + request.getHeader("Host");
+            boolean changesData = !"GET".equals(request.getMethod()) && !"HEAD".equals(request.getMethod());
+            if (changesData && origin != null && !"http://localhost:4200".equals(origin)
+                    && !ownOrigin.equals(origin)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
             filterChain.doFilter(request, response);
         };
     }

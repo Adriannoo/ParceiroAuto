@@ -28,6 +28,7 @@ CREATE TABLE company (
 CREATE TABLE app_user (
     id bigserial PRIMARY KEY,
     login varchar(50) NOT NULL UNIQUE,
+    name varchar(100),
     password varchar(255) NOT NULL
 );
 
