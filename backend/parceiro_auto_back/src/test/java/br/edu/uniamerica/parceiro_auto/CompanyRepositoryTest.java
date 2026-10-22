@@ -38,7 +38,7 @@ class CompanyRepositoryTest {
     private UserCompanyRepository userCompanyRepository;
 
     @Test
-    void deveRetornarSomenteEmpresasVinculadasAoUsuarioSolicitado() {
+    void returnsOnlyCompaniesLinkedToRequestedUser() {
         // Arrange
         User owner = user("owner@example.com");
         User anotherUser = user("another@example.com");

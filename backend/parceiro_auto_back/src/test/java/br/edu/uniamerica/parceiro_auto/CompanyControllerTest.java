@@ -45,7 +45,7 @@ class CompanyControllerTest {
     private CompanyAccessService companyAccessService;
 
     @Test
-    void deveCriarEmpresaEAssociarAoUsuarioAutenticado() throws Exception {
+    void createsCompanyAndAssociatesItWithAuthenticatedUser() throws Exception {
         // Arrange
         Company company = company();
         when(companyAccessService.currentUserId(any(HttpServletRequest.class))).thenReturn(USER_ID);
@@ -67,7 +67,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveRetornar400ParaCadastroInvalidoSemChamarServicos() throws Exception {
+    void returns400ForInvalidRegistrationWithoutCallingServices() throws Exception {
         // Act & Assert
         mvc.perform(post("/api/companies")
                         .session(session())
@@ -81,7 +81,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveRetornar409QuandoCnpjDaEmpresaJaExiste() throws Exception {
+    void returns409WhenCompanyCnpjAlreadyExists() throws Exception {
         // Arrange
         when(companyAccessService.currentUserId(any(HttpServletRequest.class))).thenReturn(USER_ID);
         when(companyService.createCompany(any(CompanyRequestDTO.class), eq(USER_ID)))
@@ -101,7 +101,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveListarSomenteEmpresasDoUsuarioAutenticado() throws Exception {
+    void listsOnlyCompaniesBelongingToAuthenticatedUser() throws Exception {
         // Arrange
         when(companyAccessService.currentUserId(any(HttpServletRequest.class))).thenReturn(USER_ID);
         when(companyService.findAllByUser(USER_ID)).thenReturn(List.of(company()));
@@ -119,7 +119,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveBuscarCnpjEntreEmpresasDoUsuarioAutenticado() throws Exception {
+    void findsCnpjAmongAuthenticatedUserCompanies() throws Exception {
         // Arrange
         when(companyAccessService.currentUserId(any(HttpServletRequest.class))).thenReturn(USER_ID);
         when(companyService.findByCnpjAndUser("11222333000181", USER_ID)).thenReturn(company());
@@ -136,7 +136,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveRetornar404QuandoCnpjNaoPertenceAoUsuarioAutenticado() throws Exception {
+    void returns404WhenCnpjDoesNotBelongToAuthenticatedUser() throws Exception {
         // Arrange
         when(companyAccessService.currentUserId(any(HttpServletRequest.class))).thenReturn(USER_ID);
         when(companyService.findByCnpjAndUser("11222333000181", USER_ID)).thenReturn(null);
@@ -152,7 +152,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveConsultarCnpjEExibirDadosExternosMapeados() throws Exception {
+    void looksUpCnpjAndReturnsMappedExternalData() throws Exception {
         // Arrange
         CompanyLookupResponseDTO company = new CompanyLookupResponseDTO(
                 "11222333000181", "Oficina Exemplo Ltda", "Oficina Exemplo", "85801-000",
@@ -173,7 +173,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveRetornarEmpresaAposVerificarAcessoDoUsuarioAtual() throws Exception {
+    void returnsCompanyAfterVerifyingCurrentUserAccess() throws Exception {
         // Arrange
         when(companyAccessService.requireCompany(eq(COMPANY_ID), any(HttpServletRequest.class)))
                 .thenReturn(company());
@@ -190,7 +190,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveRetornar404QuandoUsuarioAtualNaoPodeAcessarEmpresa() throws Exception {
+    void returns404WhenCurrentUserCannotAccessCompany() throws Exception {
         // Arrange
         when(companyAccessService.requireCompany(eq(COMPANY_ID), any(HttpServletRequest.class)))
                 .thenThrow(new ResourceNotFoundException("Empresa nao encontrada"));
@@ -206,7 +206,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveAtualizarEmpresaAposVerificarAcessoDoUsuarioAtual() throws Exception {
+    void updatesCompanyAfterVerifyingCurrentUserAccess() throws Exception {
         // Arrange
         Company company = company();
         when(companyAccessService.requireCompany(eq(COMPANY_ID), any(HttpServletRequest.class))).thenReturn(company);
@@ -226,7 +226,7 @@ class CompanyControllerTest {
     }
 
     @Test
-    void deveExcluirEmpresaSomenteAposVerificarAcessoDoUsuarioAtual() throws Exception {
+    void deletesCompanyOnlyAfterVerifyingCurrentUserAccess() throws Exception {
         // Arrange
         when(companyAccessService.requireCompany(eq(COMPANY_ID), any(HttpServletRequest.class))).thenReturn(company());
 

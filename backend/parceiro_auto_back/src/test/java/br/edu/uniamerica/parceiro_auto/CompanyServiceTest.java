@@ -57,7 +57,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveCriarEmpresaComDadosNormalizadosEVinculosIniciais() {
+    void createsCompanyWithNormalizedDataOwnerLinkAndDefaultCategories() {
         // Arrange
         when(companyRepository.findByCnpj(NORMALIZED_CNPJ)).thenReturn(null);
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
@@ -86,7 +86,7 @@ class CompanyServiceTest {
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"", "   ", "123"})
-    void deveRejeitarCnpjAusenteOuInvalidoAntesDeSalvar(String cnpj) {
+    void rejectsMissingOrInvalidCnpjBeforeSaving(String cnpj) {
         // Arrange
         request = companyRequest(cnpj, "Oficina Exemplo", "PR", "IE", null, true);
 
@@ -97,7 +97,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRejeitarCnpjDuplicadoSemCriarVinculosOuCategorias() {
+    void rejectsDuplicateCnpjWithoutCreatingMembershipOrCategories() {
         // Arrange
         Company existingCompany = company(COMPANY_ID, NORMALIZED_CNPJ, "Empresa Existente");
         when(companyRepository.findByCnpj(NORMALIZED_CNPJ)).thenReturn(existingCompany);
@@ -112,7 +112,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRejeitarRazaoSocialVaziaAntesDeSalvar() {
+    void rejectsBlankLegalNameBeforeSaving() {
         // Arrange
         request = companyRequest("11222333000181", "   ", "PR", "IE", null, true);
         when(companyRepository.findByCnpj(NORMALIZED_CNPJ)).thenReturn(null);
@@ -127,7 +127,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveAtualizarEmpresaNormalizandoCamposOpcionaisEUf() {
+    void updatesCompanyAndNormalizesOptionalFieldsAndState() {
         // Arrange
         Company company = company(COMPANY_ID, NORMALIZED_CNPJ, "Nome Antigo");
         request = companyRequest("11.222.333/0001-81", " Nome Atualizado ", "pr", "  ", " ", false);
@@ -148,7 +148,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRejeitarAtualizacaoComCnpjDeOutraEmpresaSemAlterarEmpresaAtual() {
+    void rejectsUpdateWithAnotherCompanyCnpjWithoutChangingCurrentCompany() {
         // Arrange
         Company company = company(COMPANY_ID, "00112233000181", "Nome Original");
         Company otherCompany = company(20L, NORMALIZED_CNPJ, "Outra Empresa");
@@ -166,7 +166,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRejeitarAtualizacaoComEmpresaNula() {
+    void rejectsUpdateWhenCompanyIsNull() {
         // Act & Assert
         assertThatThrownBy(() -> service.updateCompany(null, request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -175,7 +175,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRetornarVazioAoBuscarPorIdNulo() {
+    void returnsEmptyWhenSearchingByNullId() {
         // Act
         Optional<Company> result = service.findById(null);
 
@@ -185,7 +185,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveBuscarEmpresaPorId() {
+    void findsCompanyById() {
         // Arrange
         Company company = company(COMPANY_ID, NORMALIZED_CNPJ, "Minha Empresa");
         when(companyRepository.findById(COMPANY_ID)).thenReturn(Optional.of(company));
@@ -201,7 +201,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRetornarTodasAsEmpresasDoRepositorio() {
+    void returnsAllCompaniesFromRepository() {
         // Arrange
         List<Company> companies = List.of(company(COMPANY_ID, NORMALIZED_CNPJ, "Minha Empresa"));
         when(companyRepository.findAll()).thenReturn(companies);
@@ -217,7 +217,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRetornarEmpresasDoUsuarioSolicitado() {
+    void returnsCompaniesForRequestedUser() {
         // Arrange
         List<Company> companies = List.of(company(COMPANY_ID, NORMALIZED_CNPJ, "Minha Empresa"));
         when(companyRepository.findAllByUserCompanies_User_Id(OWNER_ID)).thenReturn(companies);
@@ -233,7 +233,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveBuscarCnpjNormalizadoLimitadoAoUsuario() {
+    void findsNormalizedCnpjWithinRequestedUserCompanies() {
         // Arrange
         Company company = company(COMPANY_ID, NORMALIZED_CNPJ, "Minha Empresa");
         when(companyRepository.findByCnpjAndUserCompanies_User_Id(NORMALIZED_CNPJ, OWNER_ID)).thenReturn(company);
@@ -249,7 +249,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveBuscarEmpresaPeloCnpjNormalizado() {
+    void findsCompanyByNormalizedCnpj() {
         // Arrange
         Company company = company(COMPANY_ID, NORMALIZED_CNPJ, "Minha Empresa");
         when(companyRepository.findByCnpj(NORMALIZED_CNPJ)).thenReturn(company);
@@ -265,7 +265,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRetornarNuloParaCnpjEmBrancoSemConsultarRepositorio() {
+    void returnsNullForBlankCnpjWithoutQueryingRepository() {
         // Act
         Company result = service.findByCnpjAndUser("  ", OWNER_ID);
 
@@ -275,7 +275,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveConsultarBrasilApiComCnpjNormalizadoEMapearResposta() {
+    void looksUpBrasilApiWithNormalizedCnpjAndMapsResponse() {
         // Arrange
         BrasilApiCnpjResponse response = new BrasilApiCnpjResponse(
                 NORMALIZED_CNPJ, "Oficina Exemplo Ltda", "Oficina Exemplo", "85801-000",
@@ -297,7 +297,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRejeitarCnpjInvalidoSemConsultarBrasilApi() {
+    void rejectsInvalidCnpjWithoutCallingBrasilApi() {
         // Act & Assert
         assertThatThrownBy(() -> service.lookupByCnpj("123"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -306,7 +306,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveTraduzirCnpjNaoEncontradoPelaBrasilApiPara404() {
+    void translatesBrasilApiNotFoundTo404() {
         // Arrange
         when(brasilApiClient.findByCnpj(NORMALIZED_CNPJ)).thenThrow(mock(FeignException.NotFound.class));
 
@@ -319,7 +319,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveTraduzirFalhaDeConexaoComBrasilApiPara503() {
+    void translatesBrasilApiConnectionFailureTo503() {
         // Arrange
         when(brasilApiClient.findByCnpj(NORMALIZED_CNPJ)).thenThrow(mock(RetryableException.class));
 
@@ -332,7 +332,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveTraduzirErroInesperadoDaBrasilApiPara502() {
+    void translatesUnexpectedBrasilApiErrorTo502() {
         // Arrange
         when(brasilApiClient.findByCnpj(NORMALIZED_CNPJ)).thenThrow(mock(FeignException.class));
 
@@ -345,7 +345,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRetornar502QuandoBrasilApiResponderVazio() {
+    void returns502WhenBrasilApiResponseIsEmpty() {
         // Arrange
         when(brasilApiClient.findByCnpj(NORMALIZED_CNPJ)).thenReturn(null);
 
@@ -358,7 +358,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveExcluirEmpresaExistente() {
+    void deletesExistingCompany() {
         // Arrange
         Company company = company(COMPANY_ID, NORMALIZED_CNPJ, "Minha Empresa");
         when(companyRepository.findById(COMPANY_ID)).thenReturn(Optional.of(company));
@@ -374,7 +374,7 @@ class CompanyServiceTest {
     }
 
     @Test
-    void deveRejeitarExclusaoDeEmpresaInexistente() {
+    void rejectsDeletionWhenCompanyDoesNotExist() {
         // Arrange
         when(companyRepository.findById(COMPANY_ID)).thenReturn(Optional.empty());
 

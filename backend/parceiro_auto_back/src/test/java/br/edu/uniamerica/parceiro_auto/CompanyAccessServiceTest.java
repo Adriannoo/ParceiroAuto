@@ -45,7 +45,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRetornarEmpresaQuandoPertenceAoUsuarioAtual() {
+    void returnsCompanyWhenItBelongsToCurrentUser() {
         // Arrange
         Company company = new Company();
         company.setId(COMPANY_ID);
@@ -62,7 +62,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarEmpresaQueNaoPertenceAoUsuarioAtual() {
+    void rejectsCompanyThatDoesNotBelongToCurrentUser() {
         // Arrange
         when(companyRepository.findByIdAndUserCompanies_User_Id(COMPANY_ID, USER_ID))
                 .thenReturn(Optional.empty());
@@ -76,7 +76,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarRequisicaoSemUsuarioAutenticadoAntesDeConsultarEmpresas() {
+    void rejectsRequestWithoutAuthenticatedUserBeforeQueryingCompanies() {
         // Arrange
         request = new MockHttpServletRequest();
 
@@ -88,7 +88,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRetornarIdDoUsuarioAtualDaSessao() {
+    void returnsCurrentUserIdFromSession() {
         // Act
         Long result = service.currentUserId(request);
 
@@ -98,7 +98,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarSessaoQuandoIdDoUsuarioTemTipoInesperado() {
+    void rejectsSessionWhenUserIdHasUnexpectedType() {
         // Arrange
         request.getSession().setAttribute("userId", "42");
 
@@ -110,7 +110,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void devePermitirAcessoQuandoEmpresaEstaVinculadaAoUsuario() {
+    void allowsAccessWhenCompanyIsLinkedToUser() {
         // Arrange
         when(userCompanyRepository.existsByCompany_IdAndUser_Id(COMPANY_ID, USER_ID)).thenReturn(true);
 
@@ -123,7 +123,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarAcessoQuandoEmpresaNaoEstaVinculadaAoUsuario() {
+    void rejectsAccessWhenCompanyIsNotLinkedToUser() {
         // Arrange
         when(userCompanyRepository.existsByCompany_IdAndUser_Id(COMPANY_ID, USER_ID)).thenReturn(false);
 
@@ -136,7 +136,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void devePermitirAcessoParaEntidadeVinculadaAoUsuarioAtual() {
+    void allowsAccessToCompanyEntityLinkedToCurrentUser() {
         // Arrange
         Company company = new Company();
         company.setId(COMPANY_ID);
@@ -151,7 +151,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarEmpresaSemIdAntesDeVerificarVinculo() {
+    void rejectsCompanyWithoutIdBeforeCheckingMembership() {
         // Arrange
         Company company = new Company();
 
@@ -163,7 +163,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarEmpresaNulaAntesDeVerificarVinculo() {
+    void rejectsNullCompanyBeforeCheckingMembership() {
         // Act & Assert
         assertThatThrownBy(() -> service.requireAccess((Company) null, request))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -172,7 +172,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveVincularNovaEmpresaAoUsuarioComoProprietario() {
+    void linksNewCompanyToUserAsOwner() {
         // Arrange
         Company company = new Company();
         User user = new User();
@@ -195,7 +195,7 @@ class CompanyAccessServiceTest {
     }
 
     @Test
-    void deveRejeitarVinculoQuandoUsuarioNaoExiste() {
+    void rejectsOwnerLinkWhenUserDoesNotExist() {
         // Arrange
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
