@@ -37,6 +37,12 @@ node_modules/
 /output/
 /tmp/
 
+# Ferramentas locais de qualidade, tokens e relatorios
+/.tools/
+/.quality-local/
+.scannerwork/
+**/jmeter/local.properties
+
 # Relatorios de testes
 coverage/
 playwright-report/
