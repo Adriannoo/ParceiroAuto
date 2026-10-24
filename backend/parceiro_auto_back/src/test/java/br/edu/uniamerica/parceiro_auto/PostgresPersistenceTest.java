@@ -5,6 +5,7 @@ import br.edu.uniamerica.parceiro_auto.repository.*;
 import br.edu.uniamerica.parceiro_auto.service.TransactionService;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,12 +40,23 @@ class PostgresPersistenceTest {
     static void properties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", () -> System.getProperty("test.postgres.url"));
         registry.add("spring.datasource.username", () -> System.getProperty("test.postgres.user", "postgres"));
-        registry.add("spring.datasource.password", () -> System.getProperty("test.postgres.password", ""));
+        // Aceita a senha por ambiente para nao precisar coloca-la no comando do Maven.
+        registry.add("spring.datasource.password", () -> System.getProperty("test.postgres.password",
+                System.getenv().getOrDefault("TEST_POSTGRES_PASSWORD", "")));
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
         registry.add("spring.datasource.hikari.schema", () -> SCHEMA);
         registry.add("spring.flyway.schemas", () -> SCHEMA);
         registry.add("spring.flyway.default-schema", () -> SCHEMA);
         registry.add("spring.jpa.properties.hibernate.default_schema", () -> SCHEMA);
+    }
+
+    @AfterEach
+    void removesOnlyRecordsCreatedByTheseTests() {
+        // Preserva a demonstracao da V2 e evita dependencia da ordem dos testes.
+        jdbc.update("DELETE FROM transaction WHERE fk_id_company IN (SELECT id FROM company WHERE cnpj IN ('11111111111111', '22222222222222', '33333333333333'))");
+        jdbc.update("DELETE FROM bank_account WHERE fk_id_company IN (SELECT id FROM company WHERE cnpj IN ('11111111111111', '22222222222222', '33333333333333'))");
+        jdbc.update("DELETE FROM transaction_category WHERE fk_id_company IN (SELECT id FROM company WHERE cnpj IN ('11111111111111', '22222222222222', '33333333333333'))");
+        jdbc.update("DELETE FROM company WHERE cnpj IN ('11111111111111', '22222222222222', '33333333333333')");
     }
 
     @Test
