@@ -4,7 +4,10 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.transaction.TransactionRes
 import br.edu.uniamerica.parceiro_auto.entity.RecurrenceRule;
 import br.edu.uniamerica.parceiro_auto.entity.Transaction;
 
-public class TransactionMapper {
+public final class TransactionMapper {
+    // Classe utilitaria: a conversao e feita pelos metodos estaticos.
+    private TransactionMapper() {}
+
     public static TransactionResponseDTO toResponseDTO(Transaction transaction) {
         return toResponseDTO(transaction, null);
     }

@@ -3,32 +3,34 @@
 ## Para que serve cada ferramenta
 
 - **JUnit e Mockito:** executam testes e isolam dependencias, como repositories e clientes HTTP.
-- **JaCoCo 0.8.15:** mede o codigo executado pelos testes. O Maven exige pelo menos 90% das linhas no `verify`.
+- **JaCoCo 0.8.15:** mede o codigo executado pelos testes. O Maven exige pelo menos 90% de linhas, instrucoes e decisoes no total e em cada classe analisada.
 - **SonarQube Community 26.10.0.133078:** analisa problemas, duplicacao e importa a cobertura do JaCoCo. Scanner Maven: 5.8.0.7211.
 - **JMeter 5.6.3:** envia requisicoes HTTP e registra tempos e erros. Nao substitui testes unitarios e nao aumenta automaticamente a cobertura do JaCoCo.
 
-## Medicao inicial
+## Resultados atuais
 
-Executada em 22/10/2026 na branch `test/implementando-testes`, base `b70dce5`, com as configuracoes deste guia ainda sem commit.
+Validacao executada em 23/10/2026 na branch `test/implementando-testes`, com as alteracoes locais desta entrega. Depois de alterar codigo ou testes, execute a suite e a analise novamente.
 
 | Criterio | Resultado / proximo passo |
 |---|---|
-| Cobertura minima de 90% | **Pendente:** 606 de 970 linhas, ou 62,47%, no JaCoCo. Condicoes: 46,55%. |
+| Cobertura minima de 90% | **Atendido:** 965 de 965 linhas (100%), 99,89% das instrucoes e 97,99% das decisoes no JaCoCo. Nenhuma classe analisada ficou abaixo de 90%. |
 | Duplicacao maxima de 2% | **Atendido nesta analise:** 0%. |
 | Zero bugs e vulnerabilidades | **Atendido nesta analise:** zero alertas de ambos. |
 | Nota A e zero code smells | **Atendido nesta analise:** A e zero smells. |
-| Assercoes relevantes | Existem verificacoes de retorno, excecoes e interacoes nos testes de empresas. Revisar os novos testes com esse mesmo cuidado. |
-| Test slices | Ja existem `CompanyControllerTest` com `@WebMvcTest` e `CompanyRepositoryTest` com `@DataJpaTest`. Manter esse padrao para outras camadas. |
-| Mocks | Os testes unitarios de empresas isolam repository, acesso e BrasilAPI com Mockito. |
-| Caminhos tristes | Existem cenarios de validacao, acesso e dados inexistentes. Ainda precisamos ampliar para contas, recorrencias e lancamentos. |
-| Nomes e AAA | Os testes de empresas usam nomes de cenario em ingles e Arrange/Act/Assert. Aplicar aos proximos testes. |
+| Assercoes relevantes | Os testes verificam dados retornados, saldo, campos persistidos, excecoes e ausencia de escrita quando a entrada e invalida. |
+| Test slices | Controllers usam `@WebMvcTest`; consultas usam `@DataJpaTest`. Os contextos completos ficam nos testes de integracao que precisam deles. |
+| Mocks | Os services sao testados com repositories e dependencias simulados, sem banco real. Os testes de integracao verificam a persistencia separadamente. |
+| Caminhos tristes | Ha testes de DTOs invalidos, ausencia de sessao, acesso a outra empresa, registros inexistentes, duplicacao e falhas de integracao/rollback. |
+| Nomes e AAA | Os novos testes tem nomes de cenario em ingles e blocos Arrange/Act/Assert. Excecoes usam Act & Assert para capturar a falha. |
 | Participacao | Depende da equipe: cada integrante deve implementar e explicar seus cenarios. Ferramentas nao comprovam dominio. |
 
-JUnit: **113 testes contabilizados, 109 executados sem falhas e 4 ignorados**. Os quatro testes de PostgreSQL dependem de configuracao explicita e ainda precisam ser executados em banco de teste dedicado; H2 nao comprova comportamento de PostgreSQL/Flyway.
+JUnit: **329 testes executados, zero falhas, zero erros e nenhum ignorado**, incluindo PostgreSQL. A validacao usou um banco PostgreSQL temporario separado, removido depois. As migrations V1/V2, os dados demonstrativos e o rollback foram conferidos. O teste limpa apenas seus proprios registros entre cenarios, preservando a demonstracao e evitando dependencia da ordem.
 
-Sonar usou o perfil padrao **Sonar way core**, com 274 regras Java ativas, analisando 66 arquivos Java de producao e 12 de teste. Zero alertas se refere a essa analise e a esse perfil, nao garante ausencia absoluta de defeitos. Nenhuma exclusao de cobertura ou supressao de alerta foi adicionada.
+Sonar usou o perfil padrao **Sonar way core**. Resultado: **Quality Gate aprovado, cobertura combinada 99,5%, duplicacao 0%, bugs 0, vulnerabilidades 0, code smells 0 e manutenibilidade A**. Os resultados se referem a essa analise e a esse perfil. Nenhuma exclusao de cobertura ou supressao de alerta foi adicionada.
 
-O Quality Gate **ParceiroAuto - Entrega** avalia o codigo completo: cobertura >= 90%, duplicacao <= 2%, bugs/vulnerabilidades/smells = 0 e manutenibilidade A. O Sonar combina linhas e condicoes na metrica `coverage`: resultado **58,3%**, diferente dos 62,47% de linhas do JaCoCo. Por isso o gate do Sonar e mais exigente que apenas 90% de linhas. Atualmente ambos reprovam pela cobertura.
+O Quality Gate **ParceiroAuto - Entrega** avalia o codigo completo: cobertura >= 90%, duplicacao <= 2%, bugs/vulnerabilidades/smells = 0 e manutenibilidade A. O Sonar combina linhas e condicoes na metrica `coverage`, por isso mostra 99,5% enquanto a cobertura de linhas e 100%.
+
+Os mappers possuem construtor privado porque so oferecem metodos estaticos e nao devem ser instanciados. O JaCoCo filtra automaticamente construtores privados vazios e codigo gerado pelo Lombok. Os metodos de conversao sao executados e verificados nos testes; nao ha configuracao para excluir classes.
 
 ## Executar os testes e ver a cobertura
 
@@ -48,6 +50,18 @@ O comando executa os testes, gera `target/site/jacoco/index.html` e `jacoco.xml`
 ```
 
 Antes de analisar no Sonar, execute novamente `clean verify` para nao importar um relatorio antigo. Nao use exclusoes ou testes sem assercoes para subir a porcentagem.
+
+### Incluir PostgreSQL na verificacao
+
+Na execucao padrao, os quatro testes de PostgreSQL sao ignorados de proposito: eles precisam de um banco separado. Para repetir a verificacao completa, crie um banco vazio de testes, como `parceiro_auto_test`, e execute na pasta do backend:
+
+```powershell
+$env:TEST_POSTGRES_PASSWORD = 'senha-do-seu-banco-de-testes'
+./mvnw.cmd clean verify '-Dtest.postgres.url=jdbc:postgresql://localhost:5432/parceiro_auto_test' '-Dtest.postgres.user=postgres'
+Remove-Item Env:TEST_POSTGRES_PASSWORD
+```
+
+Substitua os exemplos pela sua conexao de testes. O teste cria um schema com nome aleatorio nesse banco e aplica as migrations nele. Nao use o banco da aplicacao. A senha vai pelo ambiente para nao aparecer nos argumentos do Maven; nao a coloque em arquivos versionados. H2 continua sendo suficiente para os testes unitarios e slices locais.
 
 ## SonarQube local
 
@@ -102,12 +116,18 @@ O script confere as assercoes no CSV, pois so o codigo de saida do JMeter nao ga
 
 Validacao inicial: **8 requisicoes, 0 falhas**, em API temporaria na porta 18080 com H2 em memoria, sem Flyway e sem alterar PostgreSQL. Isso valida o plano inicial, nao comprova capacidade, consultas autenticadas ou todos os fluxos. Ainda precisamos combinar volume e tempo de resposta esperado, incluir login/cookies e testar consultas com dados de teste. Nao usar dados de producao.
 
-## Ordem sugerida para continuar
+## O que estudar nos testes
 
-1. `BankAccountService`: 107 linhas ainda nao cobertas. Testar criacao, saldo, conta padrao, propriedade da empresa e dados inexistentes usando Mockito.
-2. `RecurrenceRuleService`: 53 linhas pendentes. Testar datas, encerramento e regras invalidas.
-3. `TransactionCategoryService`: 40 linhas pendentes. Testar criacao, atualizacao e inativacao.
-4. Controllers de contas, lancamentos e recorrencias com `@WebMvcTest`, cobrindo sucesso, 400, 401, 403 e 404 conforme cada contrato.
-5. Completar regras de lancamentos/usuarios e executar os testes de PostgreSQL em banco separado.
+| Arquivo | O que demonstra |
+|---|---|
+| `BankAccountServiceTest` | Mockito, validacoes, conta duplicada e mudanca de conta padrao. |
+| `BankAccountControllerTest` / `UserControllerTest` | Requisicoes com MockMvc, validacao de JSON, sessao e erros HTTP. |
+| `UserServiceValidationTest` | Entradas invalidas e interrupcao antes de consultar ou gravar dados. |
+| `TransactionApplicationServiceTest` | Coordenacao entre services e validacao antes de alterar a movimentacao. |
+| `FinancialRepositoryTest` | Consultas JPA, isolamento por empresa, ordenacao, limite e busca em lote. |
+| `CorsConfigTest` / `CnpjValidatorTest` | Casos validos e invalidos de origem HTTP e digitos verificadores. |
+| `TransactionAtomicityTest` / `PostgresPersistenceTest` | Rollback real e migrations; exigem integracao e nao devem ser substituidos apenas por mocks. |
+
+Os testes de autenticacao iniciam pelo `main` real usando H2. Isso confere a entrada da aplicacao sem adicionar outro contexto completo apenas para testar o metodo principal.
 
 Em cada teste: **Arrange** prepara dados e mocks; **Act** chama a operacao; **Assert** verifica resultado, estado ou excecao. Uma chamada ao metodo sem verificar nada nao basta. Recalcule a cobertura a cada etapa e explique os cenarios para a equipe.

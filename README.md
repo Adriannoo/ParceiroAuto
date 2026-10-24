@@ -51,7 +51,7 @@ Veja o [guia do frontend](docs/frontend.md) para organização, services, modais
 
 ## Testes e qualidade
 
-O backend usa JUnit, Mockito e JaCoCo, com meta de 90% de cobertura de linhas. SonarQube verifica a qualidade e JMeter executa verificacoes HTTP locais. Veja o [guia de testes e qualidade](docs/testes-qualidade.md) para instalacao, comandos, resultados atuais e proximos passos. A meta de cobertura ainda esta pendente.
+O backend usa JUnit, Mockito e JaCoCo. O Maven exige 90% de linhas, instrucoes e decisoes no total e por classe. Na validacao de 23/10/2026, foram executados 329 testes sem falhas, incluindo PostgreSQL: 100% das linhas e 97,99% das decisoes cobertas. O Sonar aprovou o Quality Gate com 0% de duplicacao, zero bugs, vulnerabilidades e code smells, e nota A. Veja o [guia de testes e qualidade](docs/testes-qualidade.md) para repetir a verificacao. JMeter executa verificacoes HTTP locais separadamente.
 
 ### Como usar as ferramentas, passo a passo
 

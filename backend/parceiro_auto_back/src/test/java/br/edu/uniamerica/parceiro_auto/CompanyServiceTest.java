@@ -387,6 +387,55 @@ class CompanyServiceTest {
         verifyNoInteractions(accessService, categoryService, brasilApiClient);
     }
 
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", " "})
+    void returnsNullForEmptyCnpjSearchWithoutQueryingRepository(String cnpj) {
+        // Act
+        Company result = service.findByCnpj(cnpj);
+        Company userResult = service.findByCnpjAndUser(cnpj, OWNER_ID);
+
+        // Assert
+        assertThat(result).isNull();
+        assertThat(userResult).isNull();
+        verifyNoInteractions(companyRepository);
+    }
+
+    @Test
+    void rejectsInvalidStateLengthBeforeSaving() {
+        // Arrange
+        request = companyRequest(NORMALIZED_CNPJ, "Empresa", "PARANA", null, null, true);
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.createCompany(request, OWNER_ID))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("A UF deve ter 2 caracteres");
+        verify(companyRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsMissingLegalNatureBeforeSaving() {
+        // Arrange: os campos posteriores nao sao usados, pois a natureza e obrigatoria.
+        request = new CompanyRequestDTO(NORMALIZED_CNPJ, "Empresa", "Empresa", null, null,
+                TaxRegime.SIMPLES_NACIONAL, CompanySize.ME, "85801-000", "Rua", "1", null,
+                "Centro", "Cascavel", "PR", "45999999999", "teste@example.com", true);
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.createCompany(request, OWNER_ID))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("A natureza juridica nao pode estar vazia");
+        verify(companyRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsNullRequiredTextBeforeSaving() {
+        // Arrange
+        request = companyRequest(NORMALIZED_CNPJ, null, "PR", null, null, true);
+
+        // Act & Assert
+        assertThatThrownBy(() -> service.createCompany(request, OWNER_ID))
+                .isInstanceOf(IllegalArgumentException.class).hasMessage("A razao social nao pode estar vazia");
+        verify(companyRepository, never()).save(any());
+    }
+
     private static CompanyRequestDTO companyRequest(
             String cnpj,
             String legalName,
