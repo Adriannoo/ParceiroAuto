@@ -3,7 +3,10 @@ package br.edu.uniamerica.parceiro_auto.controller.dto.mapper;
 import br.edu.uniamerica.parceiro_auto.controller.dto.bankaccount.BankAccountResponseDTO;
 import br.edu.uniamerica.parceiro_auto.entity.BankAccount;
 
-public class BankAccountMapper {
+public final class BankAccountMapper {
+    // Classe utilitaria: a conversao e feita pelos metodos estaticos.
+    private BankAccountMapper() {}
+
     public static BankAccountResponseDTO toResponseDTO(BankAccount bankAccount) {
         return new BankAccountResponseDTO(
                 bankAccount.getId(),

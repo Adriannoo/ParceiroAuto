@@ -13,7 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {
+// Inicia pelo main real e usa somente o banco H2 deste teste.
+@SpringBootTest(useMainMethod = SpringBootTest.UseMainMethod.ALWAYS, properties = {
         "spring.datasource.url=jdbc:h2:mem:authentication;NON_KEYWORDS=TRANSACTION,VALUE;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa", "spring.datasource.password=",

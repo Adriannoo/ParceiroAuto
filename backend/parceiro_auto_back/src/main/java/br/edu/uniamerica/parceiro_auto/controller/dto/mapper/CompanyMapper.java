@@ -4,6 +4,9 @@ import br.edu.uniamerica.parceiro_auto.controller.dto.company.CompanyResponseDTO
 import br.edu.uniamerica.parceiro_auto.entity.Company;
 
 public final class CompanyMapper {
+    // Classe utilitaria: a conversao e feita pelos metodos estaticos.
+    private CompanyMapper() {}
+
     public static CompanyResponseDTO toResponseDTO(Company company) {
         return new CompanyResponseDTO(
                 company.getId(),

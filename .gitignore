@@ -37,7 +37,7 @@ node_modules/
 /output/
 /tmp/
 
-# Ferramentas de qualidade e credenciais locais
+# Ferramentas locais de qualidade, tokens e relatorios
 /.tools/
 /.quality-local/
 .scannerwork/
