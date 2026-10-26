@@ -53,75 +53,21 @@ Veja o [guia do frontend](docs/frontend.md) para organização, services, modais
 
 O backend usa JUnit, Mockito e JaCoCo. O Maven exige 90% de linhas, instrucoes e decisoes no total e por classe. Na validacao de 23/10/2026, foram executados 329 testes sem falhas, incluindo PostgreSQL: 100% das linhas e 97,99% das decisoes cobertas. O Sonar aprovou o Quality Gate com 0% de duplicacao, zero bugs, vulnerabilidades e code smells, e nota A. Veja o [guia de testes e qualidade](docs/testes-qualidade.md) para repetir a verificacao. JMeter executa verificacoes HTTP locais separadamente.
 
-### Como usar as ferramentas, passo a passo
+### Testes e análise
 
-Um script `.ps1` e um arquivo com comandos do PowerShell. Os arquivos em `scripts/qualidade` automatizam tarefas de teste e analise; podem ser lidos antes da execucao e ficam no Git para a equipe utilizar. As ferramentas instaladas em `.tools` e as credenciais em `.quality-local` ficam fora do Git.
+Na pasta `backend/parceiro_auto_back`, execute `./mvnw.cmd clean verify` para rodar os testes e gerar o relatório JaCoCo em `target/site/jacoco/index.html`. O Maven também verifica as metas de cobertura configuradas no projeto.
 
-**1. Preparar o terminal.** Abra um terminal PowerShell na raiz `ParceiroAuto`, onde fica este README. Pode ser o terminal do IntelliJ. Configure o caminho do JDK instalado na sua maquina:
-
-```powershell
-$env:JAVA_HOME = 'C:\caminho\do\seu\jdk'
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-java -version
-```
-
-Substitua o caminho pelo seu JDK 21 ou 25. `JAVA_HOME` informa onde o Java esta instalado; `PATH` permite executar `java`. A ultima linha deve mostrar a versao. Essas configuracoes valem para esse terminal: repita ao abrir outro.
-
-**2. Executar os testes e gerar o JaCoCo.** No mesmo terminal:
+Para analisar no SonarQube, inicie o servidor escolhido (por exemplo, pelo Docker), gere o relatório JaCoCo e execute o scanner Maven na pasta do backend:
 
 ```powershell
-Push-Location backend/parceiro_auto_back
-./mvnw.cmd clean verify
-Pop-Location
+./mvnw.cmd org.sonarsource.scanner.maven:sonar-maven-plugin:sonar `
+  "-Dsonar.host.url=http://localhost:9000" `
+  "-Dsonar.token=$env:SONAR_TOKEN"
 ```
 
-`Push-Location` entra na pasta do backend; `Pop-Location` volta para a raiz. O Maven apaga resultados anteriores (`clean`), compila, executa os testes e verifica a meta de cobertura (`verify`). Nao precisa iniciar a API para a suite padrao.
+Defina `SONAR_TOKEN` no terminal com um token criado no SonarQube. O scanner envia a análise ao servidor; JaCoCo mede a cobertura dos testes. Para detalhes de configuração, consulte [testes e qualidade](docs/testes-qualidade.md).
 
-Observe a linha `Tests run`, principalmente `Failures`, `Errors` e `Skipped`. Um teste ignorado nao foi executado. Enquanto a cobertura estiver abaixo de 90%, o comando termina com `BUILD FAILURE` e uma mensagem de cobertura insuficiente, mesmo que os testes tenham passado. Outros erros precisam ser investigados.
-
-Abra `backend/parceiro_auto_back/target/site/jacoco/index.html` no navegador. Clique no pacote e na classe: verde indica linhas executadas; vermelho, linhas nao executadas; amarelo indica condicoes parcialmente exercitadas. Cobertura mostra o que foi executado, mas as assercoes dos testes precisam conferir se o resultado esta correto.
-
-**3. Iniciar o SonarQube.** O Sonar analisa o codigo e recebe o relatorio do JaCoCo. As ferramentas precisam estar extraidas em `.tools`, conforme o [guia de instalacao](docs/testes-qualidade.md#sonarqube-local); os scripts nao fazem o download. Nesta maquina isso ja foi preparado.
-
-Se `http://127.0.0.1:9000` ja abrir, o servidor esta ligado. Caso contrario, execute na raiz:
-
-```powershell
-./scripts/qualidade/iniciar-sonar.ps1 -JavaHome $env:JAVA_HOME
-```
-
-`-JavaHome` passa o caminho do Java para o script. Aguarde a inicializacao e deixe esse terminal aberto. Para os proximos comandos, use outro PowerShell na raiz e repita a configuracao do Java da etapa 1.
-
-**4. Configurar o Sonar na primeira utilizacao.** Esta etapa ja foi feita nesta maquina. Para um colega com uma instalacao local nova, o comando e:
-
-```powershell
-./scripts/qualidade/configurar-sonar.ps1
-```
-
-Ele troca a senha inicial do admin, cria o projeto, define o Quality Gate e gera o token usado pela analise. Quality Gate e o conjunto de metas que decide se o projeto foi aprovado. A senha e o token ficam protegidos pelo Windows em `.quality-local`. O script foi preparado para essa instalacao local; nao deve ser usado para configurar um servidor compartilhado da faculdade.
-
-**5. Atualizar a analise no Sonar.** Depois de gerar o JaCoCo na etapa 2, com o Sonar ligado:
-
-```powershell
-./scripts/qualidade/analisar-sonar.ps1 -JavaHome $env:JAVA_HOME
-```
-
-O script le o token local, executa o scanner e aguarda o Quality Gate. Abra [o painel do backend](http://127.0.0.1:9000/dashboard?id=parceiroauto-backend). O login e `admin`. Para consultar sua senha local no terminal:
-
-```powershell
-(Import-Clixml .quality-local/sonar-admin.xml).GetNetworkCredential().Password
-```
-
-Se aparecer `QUALITY GATE STATUS: FAILED`, confira no painel qual meta reprovou. Isso e diferente de falha de conexao ou autenticacao. O Sonar combina linhas e condicoes na cobertura; sua porcentagem pode diferir da cobertura de linhas do JaCoCo.
-
-**6. Executar o JMeter, depois de entender as etapas anteriores.** Ele testa a API por HTTP, entao precisa do backend e do banco funcionando. Com a API na porta 8080, execute na raiz, em outro terminal preparado com Java:
-
-```powershell
-./scripts/qualidade/testar-jmeter.ps1 -JavaHome $env:JAVA_HOME
-```
-
-O plano inicial envia 8 requisicoes: verifica a documentacao com status 200 e o bloqueio de empresas sem login com status 401. O 401 e esperado nesse teste. O script informa quantas requisicoes passaram e o caminho do relatorio HTML em `target/jmeter`. Se a API usar outra porta, acrescente, por exemplo, `-Port 8081`.
-
-JMeter mede respostas e tempos; ele nao substitui os testes JUnit nem aumenta a cobertura do JaCoCo nesta configuracao. Primeiro aprenda a executar e ler cada relatorio; depois podemos ampliar os testes juntos.
+O plano JMeter fica em `backend/parceiro_auto_back/src/test/jmeter/smoke-api.jmx` e pode ser aberto com o Apache JMeter. Ele verifica a API por HTTP e não substitui os testes JUnit nem altera a cobertura JaCoCo.
 
 ## Swagger e API
 

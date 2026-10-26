@@ -70,4 +70,4 @@ Cobertura de linhas do JaCoCo após a suíte completa:
 
 O limite global de 90% ainda não foi alcançado: faltam cobrir ao menos **84 linhas**. O relatório atual mostra que o maior próximo bloco é `BankAccountService` (107 linhas descobertas), seguido por `BankAccountController` (35). As classes solicitadas neste trabalho estão totalmente cobertas por linhas.
 
-Os scripts de SonarQube e JMeter do projeto não substituem esses testes: o Sonar requer servidor e credencial local, e o JMeter verifica a API em execução por HTTP. Para validar as classes solicitadas, `mvn test` e a suíte Maven completa são a verificação apropriada.
+SonarQube e JMeter não substituem esses testes: o Sonar requer servidor e credencial local, e o JMeter verifica a API em execução por HTTP. Para validar as classes solicitadas, `mvn test` e a suíte Maven completa são a verificação apropriada.
