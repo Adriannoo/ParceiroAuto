@@ -75,36 +75,44 @@ sonar.web.port=9000
 sonar.search.host=127.0.0.1
 ```
 
-Inicie o servidor SonarQube separadamente, pelo Docker ou pela distribuicao local, e crie um token de analise na interface do Sonar. Configure-o apenas no terminal atual, sem gravar a credencial no repositorio:
+Na raiz do repositorio, em um terminal:
 
 ```powershell
-$env:SONAR_TOKEN = 'seu-token-local'
+./scripts/qualidade/iniciar-sonar.ps1 -JavaHome $env:JAVA_HOME
 ```
 
-Com JaCoCo atualizado, execute o scanner Maven na pasta `backend/parceiro_auto_back`:
+Espere o servidor iniciar e, em outro terminal:
 
 ```powershell
-./mvnw.cmd org.sonarsource.scanner.maven:sonar-maven-plugin:sonar `
-  "-Dsonar.host.url=http://127.0.0.1:9000" `
-  "-Dsonar.token=$env:SONAR_TOKEN" `
-  "-Dsonar.qualitygate.wait=true"
+./scripts/qualidade/configurar-sonar.ps1
+./scripts/qualidade/analisar-sonar.ps1 -JavaHome $env:JAVA_HOME
 ```
 
-Acesse [o painel do backend](http://127.0.0.1:9000/dashboard?id=parceiroauto-backend) para consultar a analise e o Quality Gate. Para parar o servidor Docker, use `docker stop <nome-do-container>`; para uma distribuicao local, siga o metodo de encerramento correspondente a instalacao.
+`configurar-sonar.ps1` prepara uma instalacao local nova: troca a senha inicial do admin, cria o projeto privado, configura o gate e gera um token de analise. Pode ser executado novamente nessa mesma instalacao. Se voce ja tem outro Sonar configurado, nao use esse inicializador sobre ele.
+
+A senha e o token ficam em `.quality-local/` protegidos pelo Windows para o usuario atual. Nao compartilhe nem versione esses arquivos. Para consultar a senha de acesso ao painel no seu proprio terminal:
+
+```powershell
+(Import-Clixml .quality-local/sonar-admin.xml).GetNetworkCredential().Password
+```
+
+Acesse [o painel do backend](http://127.0.0.1:9000/dashboard?id=parceiroauto-backend) com usuario `admin` e a senha local. A analise aguarda o gate e retorna erro se ele reprovar. Isso nao significa que a ferramenta deixou de funcionar: veja as condicoes no painel.
+
+Para encerrar uma instancia iniciada pelo script, pressione Ctrl+C no terminal do servidor. A primeira instancia instalada nesta maquina foi iniciada em segundo plano: encerre apenas o processo Java cuja linha de comando contem `sonar-application-26.10.0.133078.jar` pelo Gerenciador de Tarefas. Nao encerre outros processos Java da aplicacao.
 
 ## JMeter
 
 Para outra maquina, baixe o ZIP binario do [Apache JMeter](https://jmeter.apache.org/download_jmeter.cgi), versao 5.6.3, confira o SHA-512 publicado e extraia em `.tools/apache-jmeter-5.6.3`. O arquivo `src/test/jmeter/smoke-api.jmx` do backend pode ser aberto pela interface `bin/jmeter.bat` para estudar o plano.
 
-Com a API local rodando na porta 8080, abra `backend/parceiro_auto_back/src/test/jmeter/smoke-api.jmx` na interface do JMeter. Para executar em modo nao grafico, rode da raiz do repositorio:
+Com a API local rodando na porta 8080, execute da raiz:
 
 ```powershell
-& .tools/apache-jmeter-5.6.3/bin/jmeter.bat -n -t backend/parceiro_auto_back/src/test/jmeter/smoke-api.jmx -l backend/parceiro_auto_back/target/jmeter/log_resultados.jtl -e -o backend/parceiro_auto_back/target/jmeter/relatorio_html
+./scripts/qualidade/testar-jmeter.ps1 -JavaHome $env:JAVA_HOME
 ```
 
 O plano usa 2 usuarios, 2 repeticoes e duas requisicoes por repeticao: **8 requisicoes**. Verifica status 200 e conteudo OpenAPI em `/v3/api-docs`; depois verifica status 401 e mensagem de login em `/api/companies` sem sessao. Um 401 e sucesso neste cenario porque o objetivo e confirmar o bloqueio. Um 200 inesperado nessa rota reprova.
 
-Confira as assercoes e os resultados no relatorio HTML em `target/jmeter/relatorio_html/index.html`; o codigo de saida sozinho nao garante que todas as requisicoes passaram.
+O script confere as assercoes no CSV, pois so o codigo de saida do JMeter nao garante que todas as requisicoes passaram. Os resultados ficam em `backend/parceiro_auto_back/target/jmeter/<execucao>/html/index.html`.
 
 Validacao inicial: **8 requisicoes, 0 falhas**, em API temporaria na porta 18080 com H2 em memoria, sem Flyway e sem alterar PostgreSQL. Isso valida o plano inicial, nao comprova capacidade, consultas autenticadas ou todos os fluxos. Ainda precisamos combinar volume e tempo de resposta esperado, incluir login/cookies e testar consultas com dados de teste. Nao usar dados de producao.
 

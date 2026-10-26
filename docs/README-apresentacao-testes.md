@@ -55,13 +55,13 @@ Para executar somente as três classes de categorias e movimentações:
 ./mvnw.cmd "-Dtest=TransactionCategoryServiceTest,TransactionCategoryControllerTest,TransactionServiceTest" test
 ```
 
-Para analisar no Sonar, primeiro gere um relatório atualizado com os testes. Com o servidor iniciado e as credenciais configuradas, execute o scanner Maven na pasta do backend:
+Para analisar no Sonar, primeiro gere um relatório atualizado com os testes. Com o servidor local iniciado e as credenciais configuradas, volte à raiz e execute:
 
 ```powershell
-./mvnw.cmd org.sonarsource.scanner.maven:sonar-maven-plugin:sonar "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=$env:SONAR_TOKEN"
+./scripts/qualidade/analisar-sonar.ps1 -JavaHome $env:JAVA_HOME
 ```
 
-O comando envia a análise Maven para o servidor em `http://localhost:9000`. O servidor é iniciado separadamente; o scanner Maven é quem analisa o código.
+O script envia a análise Maven para o servidor local em `http://127.0.0.1:9000` e espera o resultado do Quality Gate. O servidor local do projeto é iniciado separadamente; o scanner Maven é quem analisa o código.
 
 ## Perguntas que podem surgir
 
