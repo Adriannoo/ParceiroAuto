@@ -55,7 +55,7 @@ O backend usa JUnit, Mockito e JaCoCo. O Maven exige 90% de linhas, instrucoes e
 
 ### Como usar as ferramentas, passo a passo
 
-Um script `.ps1` e um arquivo com comandos do PowerShell. Os arquivos em `scripts/qualidade` automatizam tarefas de teste e analise; podem ser lidos antes da execucao e ficam no Git para a equipe utilizar. As ferramentas instaladas em `.tools` e as credenciais em `.quality-local` ficam fora do Git.
+Os arquivos `.ps1` em `scripts/qualidade` automatizam tarefas de teste e análise nesta cópia local do projeto. A pasta é ignorada pelo Git; mantenha os scripts disponíveis no ambiente para executar essas etapas. As ferramentas instaladas em `.tools` e as credenciais em `.quality-local` também ficam fora do Git.
 
 **1. Preparar o terminal.** Abra um terminal PowerShell na raiz `ParceiroAuto`, onde fica este README. Pode ser o terminal do IntelliJ. Configure o caminho do JDK instalado na sua maquina:
 

@@ -41,6 +41,7 @@ node_modules/
 /.tools/
 /.quality-local/
 .codex/
+/scripts/
 .scannerwork/
 **/jmeter/local.properties
 
