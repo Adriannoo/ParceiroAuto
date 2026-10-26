@@ -40,6 +40,7 @@ node_modules/
 # Ferramentas locais de qualidade, tokens e relatorios
 /.tools/
 /.quality-local/
+.codex/
 .scannerwork/
 **/jmeter/local.properties
 
